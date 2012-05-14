@@ -7,6 +7,9 @@ import java.nio.ByteBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import android.content.Context;
+import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
@@ -14,34 +17,30 @@ import android.os.Handler;
 import android.util.AttributeSet;
 import android.widget.Toast;
 
-import android.content.Context;
-import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
-
 public class InstaCamRenderer extends GLSurfaceView implements
 		GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
 	private Camera mCamera;
-	private final InstaCamShader mShaderCopyOes = new InstaCamShader();
 	private final InstaCamFbo mFboExternal = new InstaCamFbo();
 	private final InstaCamFbo mFboOffscreen = new InstaCamFbo();
 	private ByteBuffer mFullQuadVertices;
+	private final float[] mOrientationM = new float[16];
+	private final InstaCamShader mShaderCopyOes = new InstaCamShader();
 	private SurfaceTexture mSurfaceTexture;
 	private boolean mSurfaceTextureUpdate;
-	private int mWidth, mHeight;
 	private final float[] mTransformM = new float[16];
-	private final float[] mOrientationM = new float[16];
+	private int mWidth, mHeight;
 
 	public InstaCamRenderer(Context context) {
 		super(context);
 		init();
 	}
-	
+
 	public InstaCamRenderer(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init();
 	}
-	
+
 	private void init() {
 		// Create full scene quad buffer.
 		final byte FULL_QUAD_COORDS[] = { -1, 1, -1, -1, 1, 1, 1, -1 };
@@ -50,9 +49,9 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 		setEGLContextClientVersion(2);
 		setRenderer(this);
-		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);		
+		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 	}
-	
+
 	private synchronized String loadRawString(int rawId) throws Exception {
 		InputStream is = getContext().getResources().openRawResource(rawId);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -147,7 +146,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		if (cameraId >= 0) {
 			Matrix.setRotateM(mOrientationM, 0, orientation, 0f, 0f, 1f);
 			mCamera = Camera.open(cameraId);
-		} else {
+		} else if (mSurfaceTexture != null) {
 			mSurfaceTexture.release();
 			mSurfaceTexture = null;
 		}

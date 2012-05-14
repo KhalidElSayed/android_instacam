@@ -3,17 +3,29 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
+    <TextView
+        android:id="@+id/header"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:text="TITLE"
+        android:textSize="20dp" />
+
+    <TextView
+        android:id="@+id/footer"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:text="FOOTER"
+        android:textSize="20dp" />
+
     <fi.harism.instacam.InstaCamRenderer
         android:id="@+id/instacam_renderer"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent" />
-
-    <ImageButton
-        android:background="#8AFF"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:src="@android:drawable/ic_menu_camera" />
+        android:layout_height="fill_parent"
+        android:layout_above="@id/footer"
+        android:layout_below="@id/header" />
 
 </RelativeLayout>
