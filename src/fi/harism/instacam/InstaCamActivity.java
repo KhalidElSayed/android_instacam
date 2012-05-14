@@ -25,6 +25,7 @@ public class InstaCamActivity extends Activity implements
 
 	private int mDefaultCameraId = -1;
 	private InstaCamRenderer mRenderer;
+	private MonoRS mMonoRS;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -43,17 +44,15 @@ public class InstaCamActivity extends Activity implements
 			}
 		}
 		
+		mMonoRS = new MonoRS(this);
+		
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
 		
 		this.overridePendingTransition(0, 0);
 		
-		//mRenderer = new InstaCamRenderer(this);
-		//setContentView(mRenderer);
-		
-		
-		setContentView(R.layout.main);
+		setContentView(R.layout.instacam);
 		mRenderer = (InstaCamRenderer)findViewById(R.id.instacam_renderer);
 	}
 
@@ -110,13 +109,21 @@ public class InstaCamActivity extends Activity implements
 					.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 			filePath = new File(filePath, "/InstaCam/");
 			filePath.mkdirs();
-			filePath = new File(filePath, pictureName);
+			filePath = new File(filePath, pictureName + ".jpeg");
 			filePath.createNewFile();
 
-			Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+			
+			Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+			
+			mMonoRS.apply(this, bitmap);
+			
 			FileOutputStream fos = new FileOutputStream(filePath);
-			bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+			bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+			fos.flush();
 			fos.close();
+			bitmap.recycle();
 
 			ContentValues v = new ContentValues();
 			v.put(Images.Media.TITLE, pictureName);
