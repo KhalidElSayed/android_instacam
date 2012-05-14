@@ -28,7 +28,7 @@ public class InstaCamActivity extends Activity {
 
 	private Camera mCamera;
 	private int mCameraId = -1;
-	private MonoRS mMonoRS;
+	private FilterRS mMonoRS;
 	private final ButtonObserver mObserverButton = new ButtonObserver();
 	private final CameraObserver mObserverCamera = new CameraObserver();
 	private final SeekBarObserver mObserverSeekBar = new SeekBarObserver();
@@ -57,7 +57,7 @@ public class InstaCamActivity extends Activity {
 			}
 		}
 
-		mMonoRS = new MonoRS(this);
+		mMonoRS = new FilterRS(this);
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -160,7 +160,12 @@ public class InstaCamActivity extends Activity {
 				Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,
 						data.length, options);
 
-				mMonoRS.apply(InstaCamActivity.this, bitmap);
+				float brightness = (mObserverSeekBar.mBrightness - 50) / 100f;
+				float contrast = (mObserverSeekBar.mContrast - 50) / 100f;
+				float saturation = (mObserverSeekBar.mSaturation - 50) / 100f;
+
+				mMonoRS.apply(InstaCamActivity.this, bitmap, brightness,
+						contrast, saturation);
 
 				FileOutputStream fos = new FileOutputStream(filePath);
 				bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
