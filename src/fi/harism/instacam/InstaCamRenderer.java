@@ -20,12 +20,15 @@ import android.widget.Toast;
 public class InstaCamRenderer extends GLSurfaceView implements
 		GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
+	private final float mAspectRatio[] = new float[2];
+	private final float mAspectRatioPreview[] = new float[2];
 	private Camera mCamera;
 	private final InstaCamFbo mFboExternal = new InstaCamFbo();
 	private final InstaCamFbo mFboOffscreen = new InstaCamFbo();
 	private ByteBuffer mFullQuadVertices;
 	private final float[] mOrientationM = new float[16];
 	private final InstaCamShader mShaderCopyOes = new InstaCamShader();
+	private final InstaCamShader mShaderFilter = new InstaCamShader();
 	private SurfaceTexture mSurfaceTexture;
 	private boolean mSurfaceTextureUpdate;
 	private final float[] mTransformM = new float[16];
@@ -80,27 +83,45 @@ public class InstaCamRenderer extends GLSurfaceView implements
 			mSurfaceTexture.updateTexImage();
 			mSurfaceTexture.getTransformMatrix(mTransformM);
 			mSurfaceTextureUpdate = false;
+
+			mFboOffscreen.bind();
+			mFboOffscreen.bindTexture(0);
+
+			mShaderCopyOes.useProgram();
+
+			int uOrientationM = mShaderCopyOes.getHandle("uOrientationM");
+			int uTransformM = mShaderCopyOes.getHandle("uTransformM");
+
+			GLES20.glUniformMatrix4fv(uOrientationM, 1, false, mOrientationM, 0);
+			GLES20.glUniformMatrix4fv(uTransformM, 1, false, mTransformM, 0);
+
+			GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+			GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+					mFboExternal.getTexture(0));
+
+			renderQuad(mShaderCopyOes.getHandle("aPosition"));
 		}
 
 		// Copy FBO to screen buffer.
 		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
 		GLES20.glViewport(0, 0, mWidth, mHeight);
 
-		mShaderCopyOes.useProgram();
-		int uOrientationM = mShaderCopyOes.getHandle("uOrientationM");
-		int uTransformM = mShaderCopyOes.getHandle("uTransformM");
-		int aPosition = mShaderCopyOes.getHandle("aPosition");
+		GLES20.glClearColor(.6f, .6f, .6f, 1f);
+		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
-		GLES20.glUniformMatrix4fv(uOrientationM, 1, false, mOrientationM, 0);
-		GLES20.glUniformMatrix4fv(uTransformM, 1, false, mTransformM, 0);
+		mShaderFilter.useProgram();
+
+		int uAspectRatio = mShaderFilter.getHandle("uAspectRatio");
+		int uAspectRatioPreview = mShaderFilter
+				.getHandle("uAspectRatioPreview");
+
+		GLES20.glUniform2fv(uAspectRatio, 1, mAspectRatio, 0);
+		GLES20.glUniform2fv(uAspectRatioPreview, 1, mAspectRatioPreview, 0);
 
 		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mFboExternal.getTexture(0));
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mFboOffscreen.getTexture(0));
 
-		GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_BYTE, false, 0,
-				mFullQuadVertices);
-		GLES20.glEnableVertexAttribArray(aPosition);
-		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+		renderQuad(mShaderCopyOes.getHandle("aPosition"));
 	}
 
 	@Override
@@ -114,6 +135,9 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		mWidth = width;
 		mHeight = height;
 
+		mAspectRatio[0] = (float) Math.min(mWidth, mHeight) / mWidth;
+		mAspectRatio[1] = (float) Math.min(mWidth, mHeight) / mHeight;
+
 		if (mSurfaceTexture != null) {
 			mSurfaceTexture.release();
 			mSurfaceTexture = null;
@@ -121,32 +145,57 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 		mFboExternal.reset();
 		mFboExternal.init(mWidth, mHeight, 1, true);
+		mFboOffscreen.reset();
+		mFboOffscreen.init(mWidth, mHeight, 1, false);
 	}
 
 	@Override
 	public synchronized void onSurfaceCreated(GL10 unused, EGLConfig config) {
-		String vertexSource, fragmentSource;
 		try {
+			String vertexSource, fragmentSource;
 			vertexSource = loadRawString(R.raw.copy_oes_vs);
 			fragmentSource = loadRawString(R.raw.copy_oes_fs);
 			mShaderCopyOes.deleteProgram();
 			mShaderCopyOes.setProgram(vertexSource, fragmentSource);
+			vertexSource = loadRawString(R.raw.filter_vs);
+			fragmentSource = loadRawString(R.raw.filter_fs);
+			mShaderFilter.setProgram(vertexSource, fragmentSource);
+
 		} catch (Exception ex) {
 			mShaderCopyOes.deleteProgram();
+			mShaderFilter.deleteProgram();
 			showError(ex.getMessage());
 		}
 	}
 
-	public synchronized void setCamera(int cameraId, int orientation) {
-		if (mCamera != null) {
-			mCamera.stopPreview();
-			mCamera.release();
-			mCamera = null;
+	private void renderQuad(int aPosition) {
+		GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_BYTE, false, 0,
+				mFullQuadVertices);
+		GLES20.glEnableVertexAttribArray(aPosition);
+		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+	}
+
+	public synchronized void setCamera(Camera camera, int orientation) {
+		mCamera = camera;
+		Matrix.setRotateM(mOrientationM, 0, orientation, 0f, 0f, 1f);
+
+		if (camera != null) {
+			Camera.Parameters params = camera.getParameters();
+			Camera.Size size = params.getPreviewSize();
+
+			if (orientation % 90 == 0) {
+				int w = size.width;
+				size.width = size.height;
+				size.height = w;
+			}
+
+			mAspectRatioPreview[0] = (float) Math.min(size.width, size.height)
+					/ size.width;
+			mAspectRatioPreview[1] = (float) Math.min(size.width, size.height)
+					/ size.height;
 		}
-		if (cameraId >= 0) {
-			Matrix.setRotateM(mOrientationM, 0, orientation, 0f, 0f, 1f);
-			mCamera = Camera.open(cameraId);
-		} else if (mSurfaceTexture != null) {
+
+		if (camera == null && mSurfaceTexture != null) {
 			mSurfaceTexture.release();
 			mSurfaceTexture = null;
 		}
@@ -164,31 +213,30 @@ public class InstaCamRenderer extends GLSurfaceView implements
 	}
 
 	public void takePicture(final Camera.PictureCallback callback) {
-		if (mCamera != null) {
-			mCamera.autoFocus(new Camera.AutoFocusCallback() {
-				@Override
-				public void onAutoFocus(boolean success, Camera camera) {
-					if (success) {
-						mCamera.takePicture(new Camera.ShutterCallback() {
-							@Override
-							public void onShutter() {
-							}
-						}, null, new Camera.PictureCallback() {
-							@Override
-							public void onPictureTaken(byte[] data,
-									Camera camera) {
-								callback.onPictureTaken(data, camera);
-								camera.startPreview();
-							}
-						});
-					} else {
-						showError("Auto focus failed.");
-					}
-				}
-			});
-		} else {
+		if (mCamera == null) {
 			showError("Camera not initialized.");
+			return;
 		}
+		mCamera.autoFocus(new Camera.AutoFocusCallback() {
+			@Override
+			public void onAutoFocus(boolean success, Camera camera) {
+				if (!success) {
+					showError("Auto focus failed.");
+					return;
+				}
+				mCamera.takePicture(new Camera.ShutterCallback() {
+					@Override
+					public void onShutter() {
+					}
+				}, null, new Camera.PictureCallback() {
+					@Override
+					public void onPictureTaken(byte[] data, Camera camera) {
+						callback.onPictureTaken(data, camera);
+						camera.startPreview();
+					}
+				});
+			}
+		});
 	}
 
 }

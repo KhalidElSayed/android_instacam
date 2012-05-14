@@ -25,7 +25,8 @@ import android.view.WindowManager;
 public class InstaCamActivity extends Activity implements
 		Camera.PictureCallback {
 
-	private int mDefaultCameraId = -1;
+	private Camera mCamera;
+	private int mCameraId = -1;
 	private MonoRS mMonoRS;
 	private InstaCamRenderer mRenderer;
 
@@ -39,15 +40,15 @@ public class InstaCamActivity extends Activity implements
 		super.onCreate(savedInstanceState);
 
 		int numberOfCameras = Camera.getNumberOfCameras();
-		CameraInfo cameraInfo = new CameraInfo();
+		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
 		for (int i = 0; i < numberOfCameras; ++i) {
 			Camera.getCameraInfo(i, cameraInfo);
 			if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
-				mDefaultCameraId = i;
+				mCameraId = i;
 			}
-			if (mDefaultCameraId == -1
+			if (mCameraId == -1
 					&& cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
-				mDefaultCameraId = i;
+				mCameraId = i;
 			}
 		}
 
@@ -73,7 +74,12 @@ public class InstaCamActivity extends Activity implements
 	public void onPause() {
 		super.onPause();
 		mRenderer.onPause();
-		mRenderer.setCamera(-1, 0);
+
+		mCamera.stopPreview();
+		mCamera.release();
+		mCamera = null;
+
+		mRenderer.setCamera(null, 0);
 	}
 
 	@Override
@@ -111,6 +117,9 @@ public class InstaCamActivity extends Activity implements
 			fos.close();
 			bitmap.recycle();
 
+			Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+			Camera.getCameraInfo(mCameraId, cameraInfo);
+
 			ContentValues v = new ContentValues();
 			v.put(MediaColumns.TITLE, pictureName);
 			v.put(MediaColumns.DISPLAY_NAME, pictureName);
@@ -119,7 +128,7 @@ public class InstaCamActivity extends Activity implements
 			v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
 			v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
 			v.put(MediaColumns.MIME_TYPE, "image/jpeg");
-			v.put(ImageColumns.ORIENTATION, 90);
+			v.put(ImageColumns.ORIENTATION, cameraInfo.orientation);
 			v.put(MediaColumns.DATA, filePath.getAbsolutePath());
 
 			File parent = filePath.getParentFile();
@@ -145,9 +154,11 @@ public class InstaCamActivity extends Activity implements
 		super.onResume();
 		mRenderer.onResume();
 
+		mCamera = Camera.open(mCameraId);
+
 		CameraInfo cameraInfo = new CameraInfo();
-		Camera.getCameraInfo(mDefaultCameraId, cameraInfo);
-		mRenderer.setCamera(mDefaultCameraId, cameraInfo.orientation);
+		Camera.getCameraInfo(mCameraId, cameraInfo);
+		mRenderer.setCamera(mCamera, cameraInfo.orientation);
 	}
 
 	@Override
