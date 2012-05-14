@@ -7,6 +7,7 @@ import java.util.Calendar;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,16 +19,20 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.provider.MediaStore.MediaColumns;
-import android.view.MotionEvent;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.SeekBar;
 
-public class InstaCamActivity extends Activity implements
-		Camera.PictureCallback {
+public class InstaCamActivity extends Activity {
 
 	private Camera mCamera;
 	private int mCameraId = -1;
 	private MonoRS mMonoRS;
+	private final ButtonObserver mObserverButton = new ButtonObserver();
+	private final CameraObserver mObserverCamera = new CameraObserver();
+	private final SeekBarObserver mObserverSeekBar = new SeekBarObserver();
+	private SharedPreferences mPreferences;
 	private InstaCamRenderer mRenderer;
 
 	@Override
@@ -63,6 +68,26 @@ public class InstaCamActivity extends Activity implements
 
 		setContentView(R.layout.instacam);
 		mRenderer = (InstaCamRenderer) findViewById(R.id.instacam_renderer);
+
+		findViewById(R.id.button_exit).setOnClickListener(mObserverButton);
+		findViewById(R.id.button_shoot).setOnClickListener(mObserverButton);
+
+		mPreferences = this.getPreferences(MODE_PRIVATE);
+
+		SeekBar seekBar = (SeekBar) findViewById(R.id.seekbar_brightness);
+		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
+		seekBar.setProgress(mPreferences.getInt(
+				getString(R.string.key_brightness), 50));
+
+		seekBar = (SeekBar) findViewById(R.id.seekbar_contrast);
+		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
+		seekBar.setProgress(mPreferences.getInt(
+				getString(R.string.key_contrast), 50));
+
+		seekBar = (SeekBar) findViewById(R.id.seekbar_saturation);
+		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
+		seekBar.setProgress(mPreferences.getInt(
+				getString(R.string.key_saturation), 50));
 	}
 
 	@Override
@@ -78,75 +103,7 @@ public class InstaCamActivity extends Activity implements
 		mCamera.stopPreview();
 		mCamera.release();
 		mCamera = null;
-
 		mRenderer.setCamera(null, 0);
-	}
-
-	@Override
-	public void onPictureTaken(byte[] data, Camera camera) {
-		try {
-			Calendar calendar = Calendar.getInstance();
-
-			String pictureName = String.format(
-					"InstaCam_%d%02d%02d_%02d%02d%02d",
-					calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH)
-							+ (1 - Calendar.JANUARY),
-					calendar.get(Calendar.DATE),
-					calendar.get(Calendar.HOUR_OF_DAY),
-					calendar.get(Calendar.MINUTE),
-					calendar.get(Calendar.SECOND));
-
-			File filePath = Environment
-					.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-			filePath = new File(filePath, "/InstaCam/");
-			filePath.mkdirs();
-			filePath = new File(filePath, pictureName + ".jpeg");
-			filePath.createNewFile();
-
-			BitmapFactory.Options options = new BitmapFactory.Options();
-			options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
-			Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length,
-					options);
-
-			mMonoRS.apply(this, bitmap);
-
-			FileOutputStream fos = new FileOutputStream(filePath);
-			bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-			fos.flush();
-			fos.close();
-			bitmap.recycle();
-
-			Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-			Camera.getCameraInfo(mCameraId, cameraInfo);
-
-			ContentValues v = new ContentValues();
-			v.put(MediaColumns.TITLE, pictureName);
-			v.put(MediaColumns.DISPLAY_NAME, pictureName);
-			v.put(ImageColumns.DESCRIPTION, "Taken with InstaCam.");
-			v.put(MediaColumns.DATE_ADDED, calendar.getTimeInMillis());
-			v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
-			v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
-			v.put(MediaColumns.MIME_TYPE, "image/jpeg");
-			v.put(ImageColumns.ORIENTATION, cameraInfo.orientation);
-			v.put(MediaColumns.DATA, filePath.getAbsolutePath());
-
-			File parent = filePath.getParentFile();
-			String path = parent.toString().toLowerCase();
-			String name = parent.getName().toLowerCase();
-			v.put(Images.ImageColumns.BUCKET_ID, path.hashCode());
-			v.put(Images.ImageColumns.BUCKET_DISPLAY_NAME, name);
-			v.put(MediaColumns.SIZE, filePath.length());
-
-			// if( targ_loc != null ) {
-			// v.put(Images.Media.LATITUDE, loc.getLatitude());
-			// v.put(Images.Media.LONGITUDE, loc.getLongitude());
-			// }
-
-			ContentResolver c = getContentResolver();
-			c.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
-		} catch (Exception ex) {
-		}
 	}
 
 	@Override
@@ -155,19 +112,141 @@ public class InstaCamActivity extends Activity implements
 		mRenderer.onResume();
 
 		mCamera = Camera.open(mCameraId);
-
 		CameraInfo cameraInfo = new CameraInfo();
 		Camera.getCameraInfo(mCameraId, cameraInfo);
 		mRenderer.setCamera(mCamera, cameraInfo.orientation);
 	}
 
-	@Override
-	public boolean onTouchEvent(MotionEvent me) {
-		if (me.getAction() == MotionEvent.ACTION_DOWN) {
-			mRenderer.takePicture(this);
-			return true;
+	private final class ButtonObserver implements View.OnClickListener {
+		@Override
+		public void onClick(View v) {
+			switch (v.getId()) {
+			case R.id.button_exit:
+				finish();
+				break;
+			case R.id.button_shoot:
+				mRenderer.takePicture(mObserverCamera);
+				break;
+			}
 		}
-		return super.onTouchEvent(me);
+
+	}
+
+	private final class CameraObserver implements Camera.PictureCallback {
+		@Override
+		public void onPictureTaken(byte[] data, Camera camera) {
+			try {
+				Calendar calendar = Calendar.getInstance();
+
+				String pictureName = String.format(
+						"InstaCam_%d%02d%02d_%02d%02d%02d",
+						calendar.get(Calendar.YEAR),
+						calendar.get(Calendar.MONTH) + (1 - Calendar.JANUARY),
+						calendar.get(Calendar.DATE),
+						calendar.get(Calendar.HOUR_OF_DAY),
+						calendar.get(Calendar.MINUTE),
+						calendar.get(Calendar.SECOND));
+
+				File filePath = Environment
+						.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+				filePath = new File(filePath, "/InstaCam/");
+				filePath.mkdirs();
+				filePath = new File(filePath, pictureName + ".jpeg");
+				filePath.createNewFile();
+
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+				Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,
+						data.length, options);
+
+				mMonoRS.apply(InstaCamActivity.this, bitmap);
+
+				FileOutputStream fos = new FileOutputStream(filePath);
+				bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+				fos.flush();
+				fos.close();
+				bitmap.recycle();
+
+				Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+				Camera.getCameraInfo(mCameraId, cameraInfo);
+
+				ContentValues v = new ContentValues();
+				v.put(MediaColumns.TITLE, pictureName);
+				v.put(MediaColumns.DISPLAY_NAME, pictureName);
+				v.put(ImageColumns.DESCRIPTION, "Taken with InstaCam.");
+				v.put(MediaColumns.DATE_ADDED, calendar.getTimeInMillis());
+				v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
+				v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
+				v.put(MediaColumns.MIME_TYPE, "image/jpeg");
+				v.put(ImageColumns.ORIENTATION, cameraInfo.orientation);
+				v.put(MediaColumns.DATA, filePath.getAbsolutePath());
+
+				File parent = filePath.getParentFile();
+				String path = parent.toString().toLowerCase();
+				String name = parent.getName().toLowerCase();
+				v.put(Images.ImageColumns.BUCKET_ID, path.hashCode());
+				v.put(Images.ImageColumns.BUCKET_DISPLAY_NAME, name);
+				v.put(MediaColumns.SIZE, filePath.length());
+
+				// if( targ_loc != null ) {
+				// v.put(Images.Media.LATITUDE, loc.getLatitude());
+				// v.put(Images.Media.LONGITUDE, loc.getLongitude());
+				// }
+
+				ContentResolver c = getContentResolver();
+				c.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+			} catch (Exception ex) {
+			}
+		}
+
+	}
+
+	private final class SeekBarObserver implements
+			SeekBar.OnSeekBarChangeListener {
+
+		private int mBrightness;
+		private int mContrast;
+		private int mSaturation;
+
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress,
+				boolean fromUser) {
+			switch (seekBar.getId()) {
+			case R.id.seekbar_brightness:
+				mPreferences.edit()
+						.putInt(getString(R.string.key_brightness), progress)
+						.commit();
+				mBrightness = progress;
+				break;
+			case R.id.seekbar_contrast:
+				mPreferences.edit()
+						.putInt(getString(R.string.key_contrast), progress)
+						.commit();
+				mContrast = progress;
+				break;
+			case R.id.seekbar_saturation:
+				mPreferences.edit()
+						.putInt(getString(R.string.key_saturation), progress)
+						.commit();
+				mSaturation = progress;
+				break;
+			}
+
+			float brightness = (mBrightness - 50) / 100f;
+			float contrast = (mContrast - 50) / 100f;
+			float saturation = (mSaturation - 50) / 100f;
+
+			mRenderer.setFilterValues(brightness, contrast, saturation);
+		}
+
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {
+		}
+
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) {
+		}
 	}
 
 }

@@ -3,23 +3,49 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <TextView
+    <RelativeLayout
         android:id="@+id/header"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:text="TITLE"
-        android:textSize="20dp" />
+        android:background="@drawable/bg_header"
+        android:gravity="center"
+        android:padding="5dp" >
 
-    <TextView
+        <TextView
+            style="@style/text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:gravity="center"
+            android:text="InstaCam"
+            android:textSize="24sp" />
+
+        <Button
+            android:id="@+id/button_menu"
+            style="@style/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="Menu" />
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/footer"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:text="FOOTER"
-        android:textSize="20dp" />
+        android:background="@drawable/bg_footer"
+        android:gravity="center"
+        android:padding="5dp" >
+
+        <Button
+            android:id="@+id/button_shoot"
+            style="@style/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Shoot" />
+    </RelativeLayout>
 
     <fi.harism.instacam.InstaCamRenderer
         android:id="@+id/instacam_renderer"
@@ -27,5 +53,85 @@
         android:layout_height="fill_parent"
         android:layout_above="@id/footer"
         android:layout_below="@id/header" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/header"
+        android:orientation="vertical"
+        android:padding="10dp" >
+
+        <TextView
+            style="@style/text"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Adjust Brightness"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:src="@drawable/bg_separator" />
+
+        <SeekBar
+            android:id="@+id/seekbar_brightness"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/text"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="Adjust Contrast"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:src="@drawable/bg_separator" />
+
+        <SeekBar
+            android:id="@+id/seekbar_contrast"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/text"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="Adjust Saturation"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:src="@drawable/bg_separator" />
+
+        <SeekBar
+            android:id="@+id/seekbar_saturation"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="10dp"
+            android:src="@drawable/bg_separator" />
+
+        <Button
+            android:id="@+id/button_exit"
+            style="@style/button"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="Exit" />
+    </LinearLayout>
 
 </RelativeLayout>

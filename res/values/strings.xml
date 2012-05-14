@@ -4,4 +4,9 @@
     <string name="hello">Hello World, InstaCamActivity!</string>
     <string name="app_name">InstaCam</string>
 
+    <!-- Preference keys -->
+    <string name="key_brightness">key_brightness</string>
+    <string name="key_contrast">key_contrast</string>
+    <string name="key_saturation">key_saturation</string>
+
 </resources>

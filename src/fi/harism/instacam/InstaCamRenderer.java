@@ -22,6 +22,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 	private final float mAspectRatio[] = new float[2];
 	private final float mAspectRatioPreview[] = new float[2];
+	private float mBrightness, mContrast, mSaturation;
 	private Camera mCamera;
 	private final InstaCamFbo mFboExternal = new InstaCamFbo();
 	private final InstaCamFbo mFboOffscreen = new InstaCamFbo();
@@ -32,6 +33,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 	private SurfaceTexture mSurfaceTexture;
 	private boolean mSurfaceTextureUpdate;
 	private final float[] mTransformM = new float[16];
+
 	private int mWidth, mHeight;
 
 	public InstaCamRenderer(Context context) {
@@ -55,7 +57,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 	}
 
-	private synchronized String loadRawString(int rawId) throws Exception {
+	private String loadRawString(int rawId) throws Exception {
 		InputStream is = getContext().getResources().openRawResource(rawId);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		byte[] buf = new byte[1024];
@@ -68,6 +70,14 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 	@Override
 	public synchronized void onDrawFrame(GL10 unused) {
+
+		GLES20.glClearColor(.5f, .5f, .5f, 1f);
+		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+
+		if (mCamera == null) {
+			return;
+		}
+
 		if (mSurfaceTexture == null) {
 			mSurfaceTexture = new SurfaceTexture(mFboExternal.getTexture(0));
 			mSurfaceTexture.setOnFrameAvailableListener(this);
@@ -106,10 +116,15 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
 		GLES20.glViewport(0, 0, mWidth, mHeight);
 
-		GLES20.glClearColor(.6f, .6f, .6f, 1f);
-		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-
 		mShaderFilter.useProgram();
+
+		int uBrightness = mShaderFilter.getHandle("uBrightness");
+		int uContrast = mShaderFilter.getHandle("uContrast");
+		int uSaturation = mShaderFilter.getHandle("uSaturation");
+
+		GLES20.glUniform1f(uBrightness, mBrightness);
+		GLES20.glUniform1f(uContrast, mContrast);
+		GLES20.glUniform1f(uSaturation, mSaturation);
 
 		int uAspectRatio = mShaderFilter.getHandle("uAspectRatio");
 		int uAspectRatioPreview = mShaderFilter
@@ -193,12 +208,21 @@ public class InstaCamRenderer extends GLSurfaceView implements
 					/ size.width;
 			mAspectRatioPreview[1] = (float) Math.min(size.width, size.height)
 					/ size.height;
+
+			requestRender();
 		}
 
 		if (camera == null && mSurfaceTexture != null) {
 			mSurfaceTexture.release();
 			mSurfaceTexture = null;
 		}
+	}
+
+	public void setFilterValues(float brightness, float contrast,
+			float saturation) {
+		mBrightness = brightness;
+		mContrast = contrast;
+		mSaturation = saturation;
 	}
 
 	private synchronized void showError(final String errorMsg) {
@@ -212,7 +236,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		});
 	}
 
-	public void takePicture(final Camera.PictureCallback callback) {
+	public synchronized void takePicture(final Camera.PictureCallback callback) {
 		if (mCamera == null) {
 			showError("Camera not initialized.");
 			return;
