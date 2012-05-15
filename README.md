@@ -13,5 +13,10 @@ Latter one is supposed to be used for final image constitution eventually.
 
 Application icon used within .APK installation file and on Google Play -market, is taken
 from icon pack by [Yanko Andreev](http://yankoa.deviantart.com/). From his MetroDroid
-icon pack to be more precise - which is released under Creative Commons -license and
-legal to use under non-commercial applications.
+icon pack to be more precise - which is released under
+[Creative Commons -license](http://creativecommons.org/licenses/by-nc-nd/3.0/) and
+should be legal for usage under non-commercial applications.
+
+Beyond this icon, all code what-so-ever textual content, including shaders, layouts etc,
+is licensed under Apache 2.0 License and can be used in commercial or personal projects.
+See LICENSE for more information. See NOTICE for any exceptions if any occur.
