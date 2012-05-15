@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
@@ -13,12 +14,13 @@
         android:padding="5dp" >
 
         <TextView
+            android:id="@+id/title"
             style="@style/text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:gravity="center"
-            android:text="InstaCam"
+            android:text="@string/title"
             android:textSize="24sp" />
 
         <Button
@@ -28,6 +30,14 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:text="Menu" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:layout_below="@id/title"
+            android:layout_marginRight="10dp"
+            android:layout_toLeftOf="@id/button_menu"
+            android:src="@drawable/bg_separator" />
     </RelativeLayout>
 
     <RelativeLayout
@@ -45,6 +55,30 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Shoot" />
+
+        <LinearLayout
+            android:id="@+id/buttons_cancel_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" >
+
+            <Button
+                android:id="@+id/button_cancel"
+                style="@style/button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:text="Cancel" />
+
+            <Button
+                android:id="@+id/button_save"
+                style="@style/button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/button_cancel"
+                android:text="Save" />
+        </LinearLayout>
     </RelativeLayout>
 
     <fi.harism.instacam.InstaCamRenderer
@@ -55,6 +89,7 @@
         android:layout_below="@id/header" />
 
     <LinearLayout
+        android:id="@+id/menu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
@@ -63,11 +98,12 @@
         android:padding="10dp" >
 
         <TextView
+            android:id="@+id/text_brightness"
             style="@style/text"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="Adjust Brightness"
+            android:text="@string/seekbar_brightness"
             android:textSize="16sp" />
 
         <ImageView
@@ -78,15 +114,17 @@
         <SeekBar
             android:id="@+id/seekbar_brightness"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:max="10" />
 
         <TextView
+            android:id="@+id/text_contrast"
             style="@style/text"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:gravity="center"
-            android:text="Adjust Contrast"
+            android:text="@string/seekbar_contrast"
             android:textSize="16sp" />
 
         <ImageView
@@ -97,15 +135,17 @@
         <SeekBar
             android:id="@+id/seekbar_contrast"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:max="10" />
 
         <TextView
+            android:id="@+id/text_saturation"
             style="@style/text"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:gravity="center"
-            android:text="Adjust Saturation"
+            android:text="@string/seekbar_saturation"
             android:textSize="16sp" />
 
         <ImageView
@@ -116,7 +156,8 @@
         <SeekBar
             android:id="@+id/seekbar_saturation"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:max="16" />
 
         <ImageView
             android:layout_width="fill_parent"

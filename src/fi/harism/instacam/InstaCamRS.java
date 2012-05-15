@@ -4,23 +4,24 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.renderscript.Allocation;
 import android.renderscript.RenderScript;
-import fi.harism.instacam.rs.ScriptC_filter;
+import fi.harism.instacam.rs.ScriptC_instacam;
 
-public class FilterRS {
+public class InstaCamRS {
 
 	private RenderScript mRS;
-	private ScriptC_filter mScript;
+	private ScriptC_instacam mScript;
 
-	public FilterRS(Context context) {
+	public InstaCamRS(Context context) {
 		mRS = RenderScript.create(context);
-		mScript = new ScriptC_filter(mRS, context.getResources(), R.raw.filter);
+		mScript = new ScriptC_instacam(mRS, context.getResources(),
+				R.raw.filter);
 	}
 
-	public void apply(Context context, Bitmap bitmap, float brightness,
-			float contrast, float saturation) {
+	public void applyFilter(Context context, Bitmap bitmap, InstaCamData data) {
 		Allocation allocation = Allocation.createFromBitmap(mRS, bitmap,
 				Allocation.MipmapControl.MIPMAP_NONE, Allocation.USAGE_SCRIPT);
-		mScript.invoke_filterImpl(allocation, brightness, contrast, saturation);
+		mScript.invoke_filterImpl(allocation, data.mBrightness, data.mContrast,
+				data.mSaturation);
 		allocation.copyTo(bitmap);
 		allocation.destroy();
 	}

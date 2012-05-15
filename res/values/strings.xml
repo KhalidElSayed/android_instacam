@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="hello">Hello World, InstaCamActivity!</string>
     <string name="app_name">InstaCam</string>
+    <string name="title"><u>InstaCam</u></string>
+
+    <!-- SeekBar strings -->
+    <string name="seekbar_brightness">Adjust Brightness (%+d)</string>
+    <string name="seekbar_contrast">Adjust Contrast (%+d)</string>
+    <string name="seekbar_saturation">Adjust Saturation (%+d)</string>
 
     <!-- Preference keys -->
     <string name="key_brightness">key_brightness</string>

@@ -4,15 +4,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Calendar;
 
+import android.animation.LayoutTransition;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.Camera.CameraInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -20,20 +22,25 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.provider.MediaStore.MediaColumns;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 public class InstaCamActivity extends Activity {
 
-	private Camera mCamera;
-	private int mCameraId = -1;
-	private FilterRS mMonoRS;
+	private final InstaCamCamera mCamera = new InstaCamCamera();
+	private InstaCamRS mInstaCamRS;
 	private final ButtonObserver mObserverButton = new ButtonObserver();
 	private final CameraObserver mObserverCamera = new CameraObserver();
+	private final RendererObserver mObserverRenderer = new RendererObserver();
 	private final SeekBarObserver mObserverSeekBar = new SeekBarObserver();
 	private SharedPreferences mPreferences;
+
 	private InstaCamRenderer mRenderer;
+	private final InstaCamData mSharedData = new InstaCamData();
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
@@ -44,20 +51,10 @@ public class InstaCamActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		int numberOfCameras = Camera.getNumberOfCameras();
-		Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-		for (int i = 0; i < numberOfCameras; ++i) {
-			Camera.getCameraInfo(i, cameraInfo);
-			if (cameraInfo.facing == CameraInfo.CAMERA_FACING_BACK) {
-				mCameraId = i;
-			}
-			if (mCameraId == -1
-					&& cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
-				mCameraId = i;
-			}
-		}
+		mInstaCamRS = new InstaCamRS(this);
 
-		mMonoRS = new FilterRS(this);
+		mCamera.setCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+		mCamera.setSharedData(mSharedData);
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -68,26 +65,43 @@ public class InstaCamActivity extends Activity {
 
 		setContentView(R.layout.instacam);
 		mRenderer = (InstaCamRenderer) findViewById(R.id.instacam_renderer);
+		mRenderer.setSharedData(mSharedData);
+		mRenderer.setObserver(mObserverRenderer);
+
+		View menu = findViewById(R.id.menu);
+		menu.setVisibility(View.GONE);
+
+		LayoutTransition layoutTransition = new LayoutTransition();
+		layoutTransition.setDuration(250);
+
+		ViewGroup root = (ViewGroup) findViewById(R.id.root);
+		root.setLayoutTransition(layoutTransition);
+
+		root = (ViewGroup) findViewById(R.id.footer);
+		root.setLayoutTransition(layoutTransition);
 
 		findViewById(R.id.button_exit).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_shoot).setOnClickListener(mObserverButton);
+		findViewById(R.id.button_save).setOnClickListener(mObserverButton);
+		findViewById(R.id.button_cancel).setOnClickListener(mObserverButton);
+		findViewById(R.id.button_menu).setOnClickListener(mObserverButton);
 
-		mPreferences = this.getPreferences(MODE_PRIVATE);
+		mPreferences = getPreferences(MODE_PRIVATE);
 
-		SeekBar seekBar = (SeekBar) findViewById(R.id.seekbar_brightness);
-		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
-		seekBar.setProgress(mPreferences.getInt(
-				getString(R.string.key_brightness), 50));
+		final int SEEKBAR_IDS[][] = {
+				{ R.id.seekbar_brightness, R.string.key_brightness, 5 },
+				{ R.id.seekbar_contrast, R.string.key_contrast, 5 },
+				{ R.id.seekbar_saturation, R.string.key_saturation, 8 } };
 
-		seekBar = (SeekBar) findViewById(R.id.seekbar_contrast);
-		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
-		seekBar.setProgress(mPreferences.getInt(
-				getString(R.string.key_contrast), 50));
-
-		seekBar = (SeekBar) findViewById(R.id.seekbar_saturation);
-		seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
-		seekBar.setProgress(mPreferences.getInt(
-				getString(R.string.key_saturation), 50));
+		for (int ids[] : SEEKBAR_IDS) {
+			SeekBar seekBar = (SeekBar) findViewById(ids[0]);
+			seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
+			seekBar.setProgress(mPreferences.getInt(getString(ids[1]), ids[2]));
+			if (seekBar.getProgress() == 0) {
+				seekBar.setProgress(1);
+				seekBar.setProgress(0);
+			}
+		}
 	}
 
 	@Override
@@ -98,23 +112,15 @@ public class InstaCamActivity extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
+		mCamera.onPause();
 		mRenderer.onPause();
-
-		mCamera.stopPreview();
-		mCamera.release();
-		mCamera = null;
-		mRenderer.setCamera(null, 0);
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
+		mCamera.onResume();
 		mRenderer.onResume();
-
-		mCamera = Camera.open(mCameraId);
-		CameraInfo cameraInfo = new CameraInfo();
-		Camera.getCameraInfo(mCameraId, cameraInfo);
-		mRenderer.setCamera(mCamera, cameraInfo.orientation);
 	}
 
 	private final class ButtonObserver implements View.OnClickListener {
@@ -125,18 +131,85 @@ public class InstaCamActivity extends Activity {
 				finish();
 				break;
 			case R.id.button_shoot:
-				mRenderer.takePicture(mObserverCamera);
+				mCamera.autoFocus(mObserverCamera);
+				break;
+			case R.id.button_menu:
+				final View view = findViewById(R.id.menu);
+				if (view.getVisibility() == View.GONE
+						|| view.getVisibility() == View.INVISIBLE) {
+					view.setVisibility(View.VISIBLE);
+				} else {
+					view.setVisibility(View.INVISIBLE);
+				}
+				break;
+			case R.id.button_save:
+				mSharedData.mImageProgress = ProgressDialog.show(
+						InstaCamActivity.this, "TITLE", "MESSAGE");
+				new Thread(new SaveRunnable()).start();
+				break;
+			case R.id.button_cancel:
+				mSharedData.mImageData = null;
+				findViewById(R.id.button_shoot).setVisibility(View.VISIBLE);
+				findViewById(R.id.buttons_cancel_save).setVisibility(View.GONE);
+				mCamera.startPreview();
 				break;
 			}
 		}
 
 	}
 
-	private final class CameraObserver implements Camera.PictureCallback {
+	private final class CameraObserver implements Camera.ShutterCallback,
+			Camera.AutoFocusCallback, Camera.PictureCallback {
+		@Override
+		public void onAutoFocus(boolean success, Camera camera) {
+			if (!success) {
+				Toast.makeText(InstaCamActivity.this, "Auto focus failed.",
+						Toast.LENGTH_SHORT).show();
+			}
+			camera.takePicture(this, null, this);
+		}
+
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
+			mSharedData.mImageData = data;
+
+			Calendar calendar = Calendar.getInstance();
+			mSharedData.mImageTime = calendar.getTimeInMillis();
+		}
+
+		@Override
+		public void onShutter() {
+			findViewById(R.id.buttons_cancel_save).setVisibility(View.VISIBLE);
+			findViewById(R.id.button_shoot).setVisibility(View.GONE);
+		}
+
+	}
+
+	private class RendererObserver implements InstaCamRenderer.Observer {
+		@Override
+		public void onSurfaceTextureCreated(SurfaceTexture surfaceTexture) {
+			try {
+				mCamera.setPreviewTexture(surfaceTexture);
+			} catch (final Exception ex) {
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(InstaCamActivity.this, ex.getMessage(),
+								Toast.LENGTH_LONG).show();
+					}
+				});
+			}
+		}
+	}
+
+	private final class SaveRunnable implements Runnable {
+
+		@Override
+		public void run() {
+			String error = null;
 			try {
 				Calendar calendar = Calendar.getInstance();
+				calendar.setTimeInMillis(mSharedData.mImageTime);
 
 				String pictureName = String.format(
 						"InstaCam_%d%02d%02d_%02d%02d%02d",
@@ -157,24 +230,18 @@ public class InstaCamActivity extends Activity {
 				BitmapFactory.Options options = new BitmapFactory.Options();
 				options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-				Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,
-						data.length, options);
+				Bitmap bitmap = BitmapFactory.decodeByteArray(
+						mSharedData.mImageData, 0,
+						mSharedData.mImageData.length, options);
 
-				float brightness = (mObserverSeekBar.mBrightness - 50) / 100f;
-				float contrast = (mObserverSeekBar.mContrast - 50) / 100f;
-				float saturation = (mObserverSeekBar.mSaturation - 50) / 100f;
-
-				mMonoRS.apply(InstaCamActivity.this, bitmap, brightness,
-						contrast, saturation);
+				mInstaCamRS.applyFilter(InstaCamActivity.this, bitmap,
+						mSharedData);
 
 				FileOutputStream fos = new FileOutputStream(filePath);
 				bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
 				fos.flush();
 				fos.close();
 				bitmap.recycle();
-
-				Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-				Camera.getCameraInfo(mCameraId, cameraInfo);
 
 				ContentValues v = new ContentValues();
 				v.put(MediaColumns.TITLE, pictureName);
@@ -184,7 +251,8 @@ public class InstaCamActivity extends Activity {
 				v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
 				v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
 				v.put(MediaColumns.MIME_TYPE, "image/jpeg");
-				v.put(ImageColumns.ORIENTATION, cameraInfo.orientation);
+				v.put(ImageColumns.ORIENTATION,
+						mCamera.getCameraInfo().orientation);
 				v.put(MediaColumns.DATA, filePath.getAbsolutePath());
 
 				File parent = filePath.getParentFile();
@@ -202,47 +270,70 @@ public class InstaCamActivity extends Activity {
 				ContentResolver c = getContentResolver();
 				c.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
 			} catch (Exception ex) {
+				error = ex.getMessage();
 			}
-		}
 
+			final String errorMsg = error;
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mSharedData.mImageProgress.dismiss();
+					mSharedData.mImageProgress = null;
+					mSharedData.mImageData = null;
+					findViewById(R.id.button_shoot).setVisibility(View.VISIBLE);
+					findViewById(R.id.buttons_cancel_save).setVisibility(
+							View.GONE);
+					mCamera.startPreview();
+					if (errorMsg != null) {
+						Toast.makeText(InstaCamActivity.this, errorMsg,
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			});
+		}
 	}
 
 	private final class SeekBarObserver implements
 			SeekBar.OnSeekBarChangeListener {
 
-		private int mBrightness;
-		private int mContrast;
-		private int mSaturation;
-
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress,
 				boolean fromUser) {
+
 			switch (seekBar.getId()) {
-			case R.id.seekbar_brightness:
+			case R.id.seekbar_brightness: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_brightness), progress)
 						.commit();
-				mBrightness = progress;
+				mSharedData.mBrightness = (progress - 5) / 10f;
+
+				TextView textView = (TextView) findViewById(R.id.text_brightness);
+				textView.setText(getString(R.string.seekbar_brightness,
+						progress - 5));
 				break;
-			case R.id.seekbar_contrast:
+			}
+			case R.id.seekbar_contrast: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_contrast), progress)
 						.commit();
-				mContrast = progress;
+				mSharedData.mContrast = (progress - 5) / 10f;
+				TextView textView = (TextView) findViewById(R.id.text_contrast);
+				textView.setText(getString(R.string.seekbar_contrast,
+						progress - 5));
 				break;
-			case R.id.seekbar_saturation:
+			}
+			case R.id.seekbar_saturation: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_saturation), progress)
 						.commit();
-				mSaturation = progress;
+				mSharedData.mSaturation = (progress - 8) / 8f;
+				TextView textView = (TextView) findViewById(R.id.text_saturation);
+				textView.setText(getString(R.string.seekbar_saturation,
+						progress - 8));
 				break;
 			}
-
-			float brightness = (mBrightness - 50) / 100f;
-			float contrast = (mContrast - 50) / 100f;
-			float saturation = (mSaturation - 50) / 100f;
-
-			mRenderer.setFilterValues(brightness, contrast, saturation);
+			}
+			mRenderer.requestRender();
 		}
 
 		@Override
