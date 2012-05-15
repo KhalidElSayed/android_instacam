@@ -8,10 +8,12 @@
     <string name="seekbar_brightness">Adjust Brightness (%+d)</string>
     <string name="seekbar_contrast">Adjust Contrast (%+d)</string>
     <string name="seekbar_saturation">Adjust Saturation (%+d)</string>
+    <string name="seekbar_corner_radius">Adjust Corner Radius (%+d)</string>
 
     <!-- Preference keys -->
     <string name="key_brightness">key_brightness</string>
     <string name="key_contrast">key_contrast</string>
     <string name="key_saturation">key_saturation</string>
+    <string name="key_corner_radius">key_corner_radius</string>
 
 </resources>

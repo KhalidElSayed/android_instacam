@@ -92,7 +92,8 @@ public class InstaCamActivity extends Activity {
 		final int SEEKBAR_IDS[][] = {
 				{ R.id.seekbar_brightness, R.string.key_brightness, 5 },
 				{ R.id.seekbar_contrast, R.string.key_contrast, 5 },
-				{ R.id.seekbar_saturation, R.string.key_saturation, 8 } };
+				{ R.id.seekbar_saturation, R.string.key_saturation, 8 },
+				{ R.id.seekbar_corner_radius, R.string.key_corner_radius, 3 } };
 
 		for (int ids[] : SEEKBAR_IDS) {
 			SeekBar seekBar = (SeekBar) findViewById(ids[0]);
@@ -332,6 +333,16 @@ public class InstaCamActivity extends Activity {
 				TextView textView = (TextView) findViewById(R.id.text_saturation);
 				textView.setText(getString(R.string.seekbar_saturation,
 						progress - 8));
+				break;
+			}
+			case R.id.seekbar_corner_radius: {
+				mPreferences.edit()
+						.putInt(getString(R.string.key_corner_radius), progress)
+						.commit();
+				mSharedData.mCornerRadius = progress / 10f;
+				TextView textView = (TextView) findViewById(R.id.text_corner_radius);
+				textView.setText(getString(R.string.seekbar_corner_radius,
+						-progress));
 				break;
 			}
 			}

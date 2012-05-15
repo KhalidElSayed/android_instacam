@@ -4,7 +4,7 @@ import android.app.ProgressDialog;
 
 public class InstaCamData {
 	public final float mAspectRatioPreview[] = new float[2];
-	public float mBrightness, mContrast, mSaturation;
+	public float mBrightness, mContrast, mSaturation, mCornerRadius;
 
 	public byte[] mImageData;
 	public ProgressDialog mImageProgress;

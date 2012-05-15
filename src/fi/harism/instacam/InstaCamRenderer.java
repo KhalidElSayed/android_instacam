@@ -103,10 +103,12 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		int uBrightness = mShaderFilter.getHandle("uBrightness");
 		int uContrast = mShaderFilter.getHandle("uContrast");
 		int uSaturation = mShaderFilter.getHandle("uSaturation");
+		int uCornerRadius = mShaderFilter.getHandle("uCornerRadius");
 
 		GLES20.glUniform1f(uBrightness, mSharedData.mBrightness);
 		GLES20.glUniform1f(uContrast, mSharedData.mContrast);
 		GLES20.glUniform1f(uSaturation, mSharedData.mSaturation);
+		GLES20.glUniform1f(uCornerRadius, mSharedData.mCornerRadius);
 
 		int uAspectRatio = mShaderFilter.getHandle("uAspectRatio");
 		int uAspectRatioPreview = mShaderFilter

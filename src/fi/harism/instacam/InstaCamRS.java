@@ -14,14 +14,14 @@ public class InstaCamRS {
 	public InstaCamRS(Context context) {
 		mRS = RenderScript.create(context);
 		mScript = new ScriptC_instacam(mRS, context.getResources(),
-				R.raw.filter);
+				R.raw.instacam);
 	}
 
 	public void applyFilter(Context context, Bitmap bitmap, InstaCamData data) {
 		Allocation allocation = Allocation.createFromBitmap(mRS, bitmap,
 				Allocation.MipmapControl.MIPMAP_NONE, Allocation.USAGE_SCRIPT);
 		mScript.invoke_filterImpl(allocation, data.mBrightness, data.mContrast,
-				data.mSaturation);
+				data.mSaturation, data.mCornerRadius);
 		allocation.copyTo(bitmap);
 		allocation.destroy();
 	}

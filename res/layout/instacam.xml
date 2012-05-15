@@ -159,6 +159,27 @@
             android:layout_height="wrap_content"
             android:max="16" />
 
+        <TextView
+            android:id="@+id/text_corner_radius"
+            style="@style/text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="@string/seekbar_corner_radius"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:src="@drawable/bg_separator" />
+
+        <SeekBar
+            android:id="@+id/seekbar_corner_radius"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:max="10" />
+
         <ImageView
             android:layout_width="fill_parent"
             android:layout_height="2dp"

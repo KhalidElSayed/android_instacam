@@ -6,9 +6,11 @@
 #include <rs_types.rsh>
 #include <rs_allocation.rsh>
 
-void filterImpl(rs_allocation allocation, float brightness, float contrast, float saturation) {
+void filterImpl(rs_allocation allocation, float brightness,
+                float contrast, float saturation, float cornerRadius) {
 	uint32_t width = rsAllocationGetDimX(allocation);
 	uint32_t height = rsAllocationGetDimY(allocation);
+	float invSqrt2 = 2.0f / sqrt(2.0f);
 	
 	for (uint32_t x = 0; x < width; ++x) {
 		for (uint32_t y = 0; y < height; ++y) {
@@ -29,9 +31,15 @@ void filterImpl(rs_allocation allocation, float brightness, float contrast, floa
 				color += (average - color) * (-saturation);
 			}
 			
-			color = clamp(color, 0.0f, 1.0f);
-			*colorPtr = rsPackColorTo8888(color);
+			float2 pos;
+			pos.x = (float) x / width;
+			pos.y = (float) y / height;			
+			float len = length(pos - 0.5f) * invSqrt2;
+			len = mix(1.0f + cornerRadius, 1.0f - cornerRadius, len);
+			color *= clamp(len, 0.0f, 1.0f);
 			
+			color = clamp(color, 0.0f, 1.0f);
+			*colorPtr = rsPackColorTo8888(color);			
 		}
 	}
 }
