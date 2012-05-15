@@ -146,7 +146,7 @@ public class InstaCamActivity extends Activity {
 				break;
 			case R.id.button_save:
 				mSharedData.mImageProgress = ProgressDialog.show(
-						InstaCamActivity.this, "TITLE", "MESSAGE");
+						InstaCamActivity.this, null, "Saving picture..");
 				new Thread(new SaveRunnable()).start();
 				break;
 			case R.id.button_cancel:
