@@ -12,6 +12,6 @@ an exercise for beefing one's knowledge on OpenGL external OES textures and Rend
 Latter one is supposed to be used for final image constitution eventually.
 
 Application icon used within .APK installation file and on Google Play -market, is taken
-from icon pack by (Yanko Andreev)[http://yankoa.deviantart.com/]. From his MetroDroid
+from icon pack by [Yanko Andreev](http://yankoa.deviantart.com/). From his MetroDroid
 icon pack to be more precise - which is released under Creative Commons -license and
 legal to use under non-commercial applications.
