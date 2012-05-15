@@ -73,10 +73,11 @@ public class InstaCamActivity extends Activity {
 
 		LayoutTransition layoutTransition = new LayoutTransition();
 		layoutTransition.setDuration(250);
-
 		ViewGroup root = (ViewGroup) findViewById(R.id.root);
 		root.setLayoutTransition(layoutTransition);
 
+		layoutTransition = new LayoutTransition();
+		layoutTransition.setDuration(250);
 		root = (ViewGroup) findViewById(R.id.footer);
 		root.setLayoutTransition(layoutTransition);
 
@@ -134,10 +135,11 @@ public class InstaCamActivity extends Activity {
 				mCamera.autoFocus(mObserverCamera);
 				break;
 			case R.id.button_menu:
-				final View view = findViewById(R.id.menu);
+				View view = findViewById(R.id.menu);
 				if (view.getVisibility() == View.GONE
 						|| view.getVisibility() == View.INVISIBLE) {
 					view.setVisibility(View.VISIBLE);
+					view.bringToFront();
 				} else {
 					view.setVisibility(View.INVISIBLE);
 				}
