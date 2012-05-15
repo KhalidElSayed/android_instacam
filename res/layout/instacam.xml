@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="Menu" />
+            android:text="@string/button_menu" />
 
         <ImageView
             android:layout_width="fill_parent"
@@ -54,7 +54,7 @@
             style="@style/button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Shoot" />
+            android:text="@string/button_shoot" />
 
         <LinearLayout
             android:id="@+id/buttons_cancel_save"
@@ -68,7 +68,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="5dp"
-                android:text="Cancel" />
+                android:text="@string/button_cancel" />
 
             <Button
                 android:id="@+id/button_save"
@@ -77,7 +77,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/button_cancel"
-                android:text="Save" />
+                android:text="@string/button_save" />
         </LinearLayout>
     </RelativeLayout>
 
@@ -193,7 +193,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:gravity="center"
-            android:text="Exit" />
+            android:text="@string/button_exit" />
     </LinearLayout>
 
 </RelativeLayout>
