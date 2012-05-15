@@ -26,10 +26,10 @@ void main() {
 		color += (average - color) * (-uSaturation);
 	}
 	
-	const float invSqrt2 = 2.0 / sqrt(2.0);
+	float invSqrt2 = 2.0 / sqrt(2.0);
 	float len = length(vTextureCoord - 0.5) * invSqrt2;
-	len = mix(1.0 + uCornerRadius, 1.0 - uCornerRadius, len);
-	color *= clamp(len, 0.0, 1.0);
+	len = smoothstep(1.0 - uCornerRadius, 1.0, len);
+	color *= mix(0.3, 1.0, 1.0 - len);
 	
 	gl_FragColor = vec4(color, 1.0);
 }

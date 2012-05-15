@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Common strings -->
     <string name="app_name">InstaCam</string>
     <string name="title"><u>InstaCam</u></string>
+    <string name="saving">Saving picture..</string>
+    <string name="focus_failed">Auto focusing failed.</string>
 
     <!-- SeekBar strings -->
     <string name="seekbar_brightness">Adjust Brightness (%+d)</string>

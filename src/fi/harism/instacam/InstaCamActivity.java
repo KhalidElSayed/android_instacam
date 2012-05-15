@@ -146,9 +146,12 @@ public class InstaCamActivity extends Activity {
 				}
 				break;
 			case R.id.button_save:
-				mSharedData.mImageProgress = ProgressDialog.show(
-						InstaCamActivity.this, null, "Saving picture..");
-				new Thread(new SaveRunnable()).start();
+				mSharedData.mImageProgress = ProgressDialog
+						.show(InstaCamActivity.this, null,
+								getString(R.string.saving));
+				Thread thread = new Thread(new SaveRunnable());
+				thread.setPriority(Thread.MAX_PRIORITY);
+				thread.start();
 				break;
 			case R.id.button_cancel:
 				mSharedData.mImageData = null;
@@ -166,7 +169,7 @@ public class InstaCamActivity extends Activity {
 		@Override
 		public void onAutoFocus(boolean success, Camera camera) {
 			if (!success) {
-				Toast.makeText(InstaCamActivity.this, "Auto focus failed.",
+				Toast.makeText(InstaCamActivity.this, R.string.focus_failed,
 						Toast.LENGTH_SHORT).show();
 			}
 			camera.takePicture(this, null, this);
@@ -336,7 +339,8 @@ public class InstaCamActivity extends Activity {
 				break;
 			}
 			case R.id.seekbar_corner_radius: {
-				mPreferences.edit()
+				mPreferences
+						.edit()
 						.putInt(getString(R.string.key_corner_radius), progress)
 						.commit();
 				mSharedData.mCornerRadius = progress / 10f;

@@ -10,33 +10,47 @@ void filterImpl(rs_allocation allocation, float brightness,
                 float contrast, float saturation, float cornerRadius) {
 	uint32_t width = rsAllocationGetDimX(allocation);
 	uint32_t height = rsAllocationGetDimY(allocation);
+	
+	float invWidth = 1.0f / width;
+	float invHeight = 1.0f / height;
+	float invCornerRadius = 1.0f / cornerRadius;
 	float invSqrt2 = 2.0f / sqrt(2.0f);
 	
-	for (uint32_t x = 0; x < width; ++x) {
-		for (uint32_t y = 0; y < height; ++y) {
+	float contrastPos = 1.0f / (1.0f - contrast);
+	float contrastNeg = 1.0f + contrast;
+	float saturationPos = 1.0f - (1.0f / (1.0f - saturation));
+	float saturationNeg = -saturation;
+	
+	float2 texPos;
+	
+	for (uint32_t xx = 0; xx < width; ++xx) {
+		
+		texPos.x = xx * invWidth;
+	
+		for (uint32_t yy = 0; yy < height; ++yy) {
 			
-			uchar4* colorPtr = (uchar4*)rsGetElementAt(allocation, x, y);
+			texPos.y = yy * invHeight;
+			
+			uchar4* colorPtr = (uchar4*)rsGetElementAt(allocation, xx, yy);
 			float3 color = rsUnpackColor8888(*colorPtr).rgb;
 			
 			color += brightness;
 			if (contrast > 0.0) {
-				color = (color - 0.5f) / (1.0f - contrast) + 0.5f;
+				color = (color - 0.5f) * contrastPos + 0.5f;
 			} else {
-				color = (color - 0.5f) * (1.0f + contrast) + 0.5f;
+				color = (color - 0.5f) * contrastNeg + 0.5f;
 			}
 			float average = dot(color, 1.0f) / 3.0f;
 			if (saturation > 0.0f) {
-				color += (average - color) * (1.0f - 1.0f / (1.0f - saturation));
+				color += (average - color) * saturationPos;
 			} else {
-				color += (average - color) * (-saturation);
+				color += (average - color) * saturationNeg;
 			}
 			
-			float2 pos;
-			pos.x = (float) x / width;
-			pos.y = (float) y / height;			
-			float len = length(pos - 0.5f) * invSqrt2;
-			len = mix(1.0f + cornerRadius, 1.0f - cornerRadius, len);
-			color *= clamp(len, 0.0f, 1.0f);
+			float len = length(texPos - 0.5f) * invSqrt2;
+			len = clamp((len - 1.0f + cornerRadius) * invCornerRadius, 0.0f, 1.0f);
+			len = len * len * (3.0f - 2.0f * len);
+			color *= mix(0.3f, 1.0f, 1.0f - len);
 			
 			color = clamp(color, 0.0f, 1.0f);
 			*colorPtr = rsPackColorTo8888(color);			
