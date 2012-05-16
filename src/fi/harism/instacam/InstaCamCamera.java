@@ -22,21 +22,38 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.Matrix;
 
+/**
+ * Class for encapsulating Camera related functionality.
+ */
 public class InstaCamCamera {
 
+	// Current Camera instance.
 	private Camera mCamera;
+	// Current Camera Id.
 	private int mCameraId;
+	// Current Camera CameraInfo.
 	private final Camera.CameraInfo mCameraInfo = new Camera.CameraInfo();
+	// SharedData instance.
 	private InstaCamData mSharedData;
 
+	/**
+	 * Simply forwards call to underlying Camera.autoFocus.
+	 */
 	public void autoFocus(Camera.AutoFocusCallback callback) {
 		mCamera.autoFocus(callback);
 	}
 
+	/**
+	 * Getter for current Camera CameraInfo.
+	 */
 	public Camera.CameraInfo getCameraInfo() {
 		return mCameraInfo;
 	}
 
+	/**
+	 * Must be called from Activity.onPause(). Stops preview and releases Camera
+	 * instance.
+	 */
 	public void onPause() {
 		if (mCamera != null) {
 			mCamera.stopPreview();
@@ -45,6 +62,9 @@ public class InstaCamCamera {
 		}
 	}
 
+	/**
+	 * Should be called from Activity.onResume(). Recreates Camera instance.
+	 */
 	public void onResume() {
 		if (mCameraId >= 0) {
 			Camera.getCameraInfo(mCameraId, mCameraInfo);
@@ -72,6 +92,9 @@ public class InstaCamCamera {
 
 	}
 
+	/**
+	 * Selects either front-facing or back-facing camera.
+	 */
 	public void setCamera(int facing) {
 		if (mCamera != null) {
 			mCamera.stopPreview();
@@ -90,16 +113,24 @@ public class InstaCamCamera {
 		}
 	}
 
+	/**
+	 * Simply forwards call to Camera.setPreviewTexture.
+	 */
 	public void setPreviewTexture(SurfaceTexture surfaceTexture)
 			throws IOException {
 		mCamera.setPreviewTexture(surfaceTexture);
-		mCamera.startPreview();
 	}
 
+	/**
+	 * Setter for storing shared data.
+	 */
 	public void setSharedData(InstaCamData sharedData) {
 		mSharedData = sharedData;
 	}
 
+	/**
+	 * Simply forwards call to Camera.startPreview.
+	 */
 	public void startPreview() {
 		mCamera.startPreview();
 	}

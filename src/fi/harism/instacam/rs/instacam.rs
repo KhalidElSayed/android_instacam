@@ -79,7 +79,7 @@ void filterImpl(rs_allocation allocation, float brightness,
 				color += (average - color) * saturationNeg;
 			}
 			
-			// Calculate darker corners.
+			// Calculate darker rounded corners.
 			float len = length(texPos - 0.5f) * sqrt2;
 			len = clamp((len - 1.0f + cornerRadius) * invCornerRadius, 0.0f, 1.0f);
 			len = len * len * (3.0f - 2.0f * len);

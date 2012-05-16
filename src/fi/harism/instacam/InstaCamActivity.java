@@ -45,21 +45,33 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/**
+ * The one and only Activity for this camera application.
+ */
 public class InstaCamActivity extends Activity {
 
+	// Custom camera holder class.
 	private final InstaCamCamera mCamera = new InstaCamCamera();
+	// RenderScript holder class.
 	private InstaCamRS mInstaCamRS;
+	// Common observer for all Buttons.
 	private final ButtonObserver mObserverButton = new ButtonObserver();
+	// Camera observer for handling picture taking.
 	private final CameraObserver mObserverCamera = new CameraObserver();
+	// Observer for handling SurfaceTexture creation.
 	private final RendererObserver mObserverRenderer = new RendererObserver();
+	// Common observer for all SeekBars.
 	private final SeekBarObserver mObserverSeekBar = new SeekBarObserver();
+	// Application shared preferences instance.
 	private SharedPreferences mPreferences;
-
+	// Preview texture renderer class.
 	private InstaCamRenderer mRenderer;
+	// Shared data instance.
 	private final InstaCamData mSharedData = new InstaCamData();
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
+		// We prevent screen orientation changes.
 		super.onConfigurationChanged(newConfig);
 	}
 
@@ -67,54 +79,66 @@ public class InstaCamActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		mInstaCamRS = new InstaCamRS(this);
-
-		mCamera.setCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
-		mCamera.setSharedData(mSharedData);
-
+		// Force full screen view.
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().clearFlags(
 				WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
 
-		this.overridePendingTransition(0, 0);
+		// Instantiate RenderScript.
+		mInstaCamRS = new InstaCamRS(this);
 
+		// Instantiate camera handler.
+		mCamera.setCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+		mCamera.setSharedData(mSharedData);
+
+		// Set content view.
 		setContentView(R.layout.instacam);
+
+		// Find renderer view and instantiate it.
 		mRenderer = (InstaCamRenderer) findViewById(R.id.instacam_renderer);
 		mRenderer.setSharedData(mSharedData);
 		mRenderer.setObserver(mObserverRenderer);
 
+		// Hide menu view by default.
 		View menu = findViewById(R.id.menu);
 		menu.setVisibility(View.GONE);
 
+		// Set transition for root view (hide/show menu).
 		LayoutTransition layoutTransition = new LayoutTransition();
 		layoutTransition.setDuration(250);
-		ViewGroup root = (ViewGroup) findViewById(R.id.root);
-		root.setLayoutTransition(layoutTransition);
+		ViewGroup viewGroup = (ViewGroup) findViewById(R.id.root);
+		viewGroup.setLayoutTransition(layoutTransition);
 
+		// Set transition for footer (switch "shoot" / "cancel"&"save").
 		layoutTransition = new LayoutTransition();
 		layoutTransition.setDuration(250);
-		root = (ViewGroup) findViewById(R.id.footer);
-		root.setLayoutTransition(layoutTransition);
+		viewGroup = (ViewGroup) findViewById(R.id.footer);
+		viewGroup.setLayoutTransition(layoutTransition);
 
+		// Set Button OnClickListeners.
 		findViewById(R.id.button_exit).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_shoot).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_save).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_cancel).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_menu).setOnClickListener(mObserverButton);
 
+		// Get preferences instance.
 		mPreferences = getPreferences(MODE_PRIVATE);
 
+		// SeekBar ids as triples { SeekBar id, key id, default value }.
 		final int SEEKBAR_IDS[][] = {
 				{ R.id.seekbar_brightness, R.string.key_brightness, 5 },
 				{ R.id.seekbar_contrast, R.string.key_contrast, 5 },
 				{ R.id.seekbar_saturation, R.string.key_saturation, 8 },
 				{ R.id.seekbar_corner_radius, R.string.key_corner_radius, 3 } };
-
+		// Set SeekBar OnSeekBarChangeListeners and default progress.
 		for (int ids[] : SEEKBAR_IDS) {
 			SeekBar seekBar = (SeekBar) findViewById(ids[0]);
 			seekBar.setOnSeekBarChangeListener(mObserverSeekBar);
 			seekBar.setProgress(mPreferences.getInt(getString(ids[1]), ids[2]));
+			// SeekBar.setProgress triggers observer only in case its value
+			// changes. And we're relying on this trigger to happen.
 			if (seekBar.getProgress() == 0) {
 				seekBar.setProgress(1);
 				seekBar.setProgress(0);
@@ -145,22 +169,26 @@ public class InstaCamActivity extends Activity {
 		@Override
 		public void onClick(View v) {
 			switch (v.getId()) {
+			// On exit simply close Activity.
 			case R.id.button_exit:
 				finish();
 				break;
+			// On shoot trigger autoFocus. This call ends to
+			// CameraObserver.onAutoFocus eventually.
 			case R.id.button_shoot:
 				mCamera.autoFocus(mObserverCamera);
 				break;
+			// Pressing menu button switches menu visibility.
 			case R.id.button_menu:
 				View view = findViewById(R.id.menu);
 				if (view.getVisibility() == View.GONE
 						|| view.getVisibility() == View.INVISIBLE) {
 					view.setVisibility(View.VISIBLE);
-					view.bringToFront();
 				} else {
-					view.setVisibility(View.INVISIBLE);
+					view.setVisibility(View.GONE);
 				}
 				break;
+			// Save button starts separate thread for saving picture.
 			case R.id.button_save:
 				mSharedData.mImageProgress = ProgressDialog
 						.show(InstaCamActivity.this, null,
@@ -169,6 +197,7 @@ public class InstaCamActivity extends Activity {
 				thread.setPriority(Thread.MAX_PRIORITY);
 				thread.start();
 				break;
+			// Cancel button simply discards current picture data.
 			case R.id.button_cancel:
 				mSharedData.mImageData = null;
 				findViewById(R.id.button_shoot).setVisibility(View.VISIBLE);
@@ -180,38 +209,51 @@ public class InstaCamActivity extends Activity {
 
 	}
 
+	/**
+	 * Class for implementing Camera related callbacks.
+	 */
 	private final class CameraObserver implements Camera.ShutterCallback,
 			Camera.AutoFocusCallback, Camera.PictureCallback {
 		@Override
 		public void onAutoFocus(boolean success, Camera camera) {
+			// If auto focus failed show brief notification about it.
 			if (!success) {
 				Toast.makeText(InstaCamActivity.this, R.string.focus_failed,
 						Toast.LENGTH_SHORT).show();
 			}
+			// And continue with taking the picture. This call will end up to
+			// onPictureTaken eventually.
 			camera.takePicture(this, null, this);
 		}
 
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
+			// Once picture is taken just store its data.
 			mSharedData.mImageData = data;
-
+			// And time it was taken.
 			Calendar calendar = Calendar.getInstance();
 			mSharedData.mImageTime = calendar.getTimeInMillis();
 		}
 
 		@Override
 		public void onShutter() {
+			// At the point picture is actually taken switch footer buttons.
 			findViewById(R.id.buttons_cancel_save).setVisibility(View.VISIBLE);
 			findViewById(R.id.button_shoot).setVisibility(View.GONE);
 		}
 
 	}
 
+	/**
+	 * Class for implementing InstaCamRenderer related callbacks.
+	 */
 	private class RendererObserver implements InstaCamRenderer.Observer {
 		@Override
 		public void onSurfaceTextureCreated(SurfaceTexture surfaceTexture) {
+			// Once we have SurfaceTexture try setting it to Camera.
 			try {
 				mCamera.setPreviewTexture(surfaceTexture);
+				mCamera.startPreview();
 			} catch (final Exception ex) {
 				runOnUiThread(new Runnable() {
 					@Override
@@ -224,15 +266,20 @@ public class InstaCamActivity extends Activity {
 		}
 	}
 
+	/**
+	 * Runnable for handling asynchronous picture saving.
+	 */
 	private final class SaveRunnable implements Runnable {
 
 		@Override
 		public void run() {
 			String error = null;
 			try {
+				// First instantiate calendar instance.
 				Calendar calendar = Calendar.getInstance();
 				calendar.setTimeInMillis(mSharedData.mImageTime);
 
+				// Generate picture name.
 				String pictureName = String.format(
 						"InstaCam_%d%02d%02d_%02d%02d%02d",
 						calendar.get(Calendar.YEAR),
@@ -242,29 +289,36 @@ public class InstaCamActivity extends Activity {
 						calendar.get(Calendar.MINUTE),
 						calendar.get(Calendar.SECOND));
 
+				// Get "Pictures" -directory path.
 				File filePath = Environment
 						.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+				// Add "/InstaCam/" -directory to it.
 				filePath = new File(filePath, "/InstaCam/");
+				// Make all dirs till ".../Pictures/InstaCam/".
 				filePath.mkdirs();
+				// Generate final file path ".../InstaCam/picname.jpeg".
 				filePath = new File(filePath, pictureName + ".jpeg");
+				// Create picture file.
 				filePath.createNewFile();
 
+				// We'd prefer to have ARGB_8888 Bitmap.
 				BitmapFactory.Options options = new BitmapFactory.Options();
 				options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-
+				// Decode picture taken by camera.
 				Bitmap bitmap = BitmapFactory.decodeByteArray(
 						mSharedData.mImageData, 0,
 						mSharedData.mImageData.length, options);
-
+				// Apply RenderScript filter to Bitmap.
 				mInstaCamRS.applyFilter(InstaCamActivity.this, bitmap,
 						mSharedData);
-
+				// Save picture to file system.
 				FileOutputStream fos = new FileOutputStream(filePath);
 				bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
 				fos.flush();
 				fos.close();
 				bitmap.recycle();
 
+				// Add picture to content resolver.
 				ContentValues v = new ContentValues();
 				v.put(MediaColumns.TITLE, pictureName);
 				v.put(MediaColumns.DISPLAY_NAME, pictureName);
@@ -295,6 +349,8 @@ public class InstaCamActivity extends Activity {
 				error = ex.getMessage();
 			}
 
+			// Finally hide progress dialog, dismiss picture data and show error
+			// message if an error occurred during saving.
 			final String errorMsg = error;
 			runOnUiThread(new Runnable() {
 				@Override
@@ -315,6 +371,9 @@ public class InstaCamActivity extends Activity {
 		}
 	}
 
+	/**
+	 * Class for implementing SeekBar related callbacks.
+	 */
 	private final class SeekBarObserver implements
 			SeekBar.OnSeekBarChangeListener {
 
@@ -323,6 +382,7 @@ public class InstaCamActivity extends Activity {
 				boolean fromUser) {
 
 			switch (seekBar.getId()) {
+			// On brightness recalculate shared value and update preferences.
 			case R.id.seekbar_brightness: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_brightness), progress)
@@ -334,6 +394,7 @@ public class InstaCamActivity extends Activity {
 						progress - 5));
 				break;
 			}
+			// On contrast recalculate shared value and update preferences.
 			case R.id.seekbar_contrast: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_contrast), progress)
@@ -344,6 +405,7 @@ public class InstaCamActivity extends Activity {
 						progress - 5));
 				break;
 			}
+			// On saturation recalculate shared value and update preferences.
 			case R.id.seekbar_saturation: {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_saturation), progress)
@@ -354,6 +416,7 @@ public class InstaCamActivity extends Activity {
 						progress - 8));
 				break;
 			}
+			// On radius recalculate shared value and update preferences.
 			case R.id.seekbar_corner_radius: {
 				mPreferences
 						.edit()
