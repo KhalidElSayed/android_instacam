@@ -203,22 +203,28 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 	@Override
 	public synchronized void onSurfaceChanged(GL10 unused, int width, int height) {
+
+		// Store width and height.
 		mWidth = width;
 		mHeight = height;
 
+		// Calculate view aspect ratio.
 		mAspectRatio[0] = (float) Math.min(mWidth, mHeight) / mWidth;
 		mAspectRatio[1] = (float) Math.min(mWidth, mHeight) / mHeight;
 
+		// If SurfaceTexture != null release and destroy it.
 		if (mSurfaceTexture != null) {
 			mSurfaceTexture.release();
 			mSurfaceTexture = null;
 		}
 
+		// Initialize textures.
 		mFboExternal.reset();
 		mFboExternal.init(mWidth, mHeight, 1, true);
 		mFboOffscreen.reset();
 		mFboOffscreen.init(mWidth, mHeight, 1, false);
 
+		// Allocate new SurfaceTexture.
 		mSurfaceTexture = new SurfaceTexture(mFboExternal.getTexture(0));
 		mSurfaceTexture.setOnFrameAvailableListener(this);
 		if (mObserver != null) {
@@ -230,6 +236,8 @@ public class InstaCamRenderer extends GLSurfaceView implements
 
 	@Override
 	public synchronized void onSurfaceCreated(GL10 unused, EGLConfig config) {
+
+		// Try to load shaders.
 		try {
 			String vertexSource, fragmentSource;
 			vertexSource = loadRawString(R.raw.copy_oes_vs);
@@ -249,6 +257,9 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		requestRender();
 	}
 
+	/**
+	 * Renders fill screen quad using given GLES id/name.
+	 */
 	private void renderQuad(int aPosition) {
 		GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_BYTE, false, 0,
 				mFullQuadVertices);
@@ -256,15 +267,24 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
 	}
 
+	/**
+	 * Setter for observer.
+	 */
 	public void setObserver(Observer observer) {
 		mObserver = observer;
 	}
 
+	/**
+	 * Setter for shared data.
+	 */
 	public void setSharedData(InstaCamData sharedData) {
 		mSharedData = sharedData;
 		requestRender();
 	}
 
+	/**
+	 * Shows Toast on screen with given message.
+	 */
 	private void showError(final String errorMsg) {
 		Handler handler = new Handler(getContext().getMainLooper());
 		handler.post(new Runnable() {
@@ -276,6 +296,9 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		});
 	}
 
+	/**
+	 * Observer class for renderer.
+	 */
 	public interface Observer {
 		public void onSurfaceTextureCreated(SurfaceTexture surfaceTexture);
 	}
