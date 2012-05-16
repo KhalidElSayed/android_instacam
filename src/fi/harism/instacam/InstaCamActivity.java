@@ -309,8 +309,7 @@ public class InstaCamActivity extends Activity {
 						mSharedData.mImageData, 0,
 						mSharedData.mImageData.length, options);
 				// Apply RenderScript filter to Bitmap.
-				mInstaCamRS.applyFilter(InstaCamActivity.this, bitmap,
-						mSharedData);
+				mInstaCamRS.applyFilter(bitmap, mSharedData);
 				// Save picture to file system.
 				FileOutputStream fos = new FileOutputStream(filePath);
 				bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);

@@ -22,18 +22,29 @@ import android.renderscript.Allocation;
 import android.renderscript.RenderScript;
 import fi.harism.instacam.rs.ScriptC_instacam;
 
+/**
+ * RenderScript container class.
+ */
 public class InstaCamRS {
 
+	// RenderScript instance.
 	private RenderScript mRS;
+	// Our script instance.
 	private ScriptC_instacam mScript;
 
+	/**
+	 * Default constructor.
+	 */
 	public InstaCamRS(Context context) {
 		mRS = RenderScript.create(context);
 		mScript = new ScriptC_instacam(mRS, context.getResources(),
 				R.raw.instacam);
 	}
 
-	public void applyFilter(Context context, Bitmap bitmap, InstaCamData data) {
+	/**
+	 * Applies filter from data values for given Bitmap.
+	 */
+	public void applyFilter(Bitmap bitmap, InstaCamData data) {
 		Allocation allocation = Allocation.createFromBitmap(mRS, bitmap,
 				Allocation.MipmapControl.MIPMAP_NONE, Allocation.USAGE_SCRIPT);
 		mScript.invoke_filterImpl(allocation, data.mBrightness, data.mContrast,
