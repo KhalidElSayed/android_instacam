@@ -18,13 +18,20 @@ package fi.harism.instacam;
 
 import android.app.ProgressDialog;
 
+/**
+ * Holder class for application wide data.
+ */
 public class InstaCamData {
+	// Preview view aspect ration.
 	public final float mAspectRatioPreview[] = new float[2];
+	// Filter values.
 	public float mBrightness, mContrast, mSaturation, mCornerRadius;
-
+	// Taken picture data (jpeg).
 	public byte[] mImageData;
+	// Progress dialog while saving picture.
 	public ProgressDialog mImageProgress;
+	// Picture capture time.
 	public long mImageTime;
-
+	// Camera orientation matrix.
 	public final float mOrientationM[] = new float[16];
 }
