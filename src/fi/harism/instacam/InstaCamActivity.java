@@ -45,7 +45,10 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.RotateAnimation;
 import android.view.animation.ScaleAnimation;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -99,6 +102,12 @@ public class InstaCamActivity extends Activity {
 		// Set content view.
 		setContentView(R.layout.instacam);
 
+		Spinner localSpinner = (Spinner) findViewById(R.id.spinner_filter);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+				this, R.array.filters, R.layout.spinner_text);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		localSpinner.setAdapter(adapter);
+
 		// Find renderer view and instantiate it.
 		mRenderer = (InstaCamRenderer) findViewById(R.id.instacam_renderer);
 		mRenderer.setSharedData(mSharedData);
@@ -118,6 +127,26 @@ public class InstaCamActivity extends Activity {
 
 		// Get preferences instance.
 		mPreferences = getPreferences(MODE_PRIVATE);
+
+		// Set observer for filter Spinner.
+		Spinner spinner = (Spinner) findViewById(R.id.spinner_filter);
+		spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view,
+					int position, long id) {
+				mPreferences.edit()
+						.putInt(getString(R.string.key_filter), position)
+						.commit();
+				mSharedData.mFilter = position;
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+			}
+		});
+		mSharedData.mFilter = mPreferences.getInt(
+				getString(R.string.key_filter), 0);
+		spinner.setSelection(mSharedData.mFilter);
 
 		// SeekBar ids as triples { SeekBar id, key id, default value }.
 		final int SEEKBAR_IDS[][] = {

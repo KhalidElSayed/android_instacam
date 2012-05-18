@@ -13,16 +13,27 @@
     <string name="button_cancel">Cancel</string>
     <string name="button_save">Save</string>
 
-    <!-- SeekBar strings -->
-    <string name="seekbar_brightness"><u>Adjust Brightness (%+d)</u></string>
+    <!-- Menu strings -->
+    <string name="spinner_filter">Select Filter</string>
+    <string name="seekbar_brightness">Adjust Brightness (%+d)</string>
     <string name="seekbar_contrast">Adjust Contrast (%+d)</string>
     <string name="seekbar_saturation">Adjust Saturation (%+d)</string>
     <string name="seekbar_corner_radius">Adjust Corner Radius (%+d)</string>
 
     <!-- Preference keys -->
+    <string name="key_filter">key_filter</string>
     <string name="key_brightness">key_brightness</string>
     <string name="key_contrast">key_contrast</string>
     <string name="key_saturation">key_saturation</string>
     <string name="key_corner_radius">key_corner_radius</string>
+
+    <!-- Filter names -->
+    <string-array name="filters">
+        <item>None</item>
+        <item>Black &amp; White</item>
+        <item>Ansel</item>
+        <item>Sepia</item>
+        <item>Retro</item>
+    </string-array>
 
 </resources>

@@ -26,6 +26,8 @@ public class InstaCamData {
 	public final float mAspectRatioPreview[] = new float[2];
 	// Filter values.
 	public float mBrightness, mContrast, mSaturation, mCornerRadius;
+	// Predefined filter.
+	public int mFilter;
 	// Taken picture data (jpeg).
 	public byte[] mImageData;
 	// Progress dialog while saving picture.

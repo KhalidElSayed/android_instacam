@@ -154,6 +154,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		mShaderFilter.useProgram();
 
 		// Uniform variables.
+		int uFilter = mShaderFilter.getHandle("uFilter");
 		int uBrightness = mShaderFilter.getHandle("uBrightness");
 		int uContrast = mShaderFilter.getHandle("uContrast");
 		int uSaturation = mShaderFilter.getHandle("uSaturation");
@@ -164,6 +165,7 @@ public class InstaCamRenderer extends GLSurfaceView implements
 				.getHandle("uAspectRatioPreview");
 
 		// Store uniform variables into use.
+		GLES20.glUniform1i(uFilter, mSharedData.mFilter);
 		GLES20.glUniform1f(uBrightness, mSharedData.mBrightness);
 		GLES20.glUniform1f(uContrast, mSharedData.mContrast);
 		GLES20.glUniform1f(uSaturation, mSharedData.mSaturation);

@@ -143,6 +143,27 @@
         android:orientation="vertical"
         android:padding="10dp" >
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp" >
+
+            <TextView
+                style="@style/text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Filter:"
+                android:textSize="16sp" />
+
+            <Spinner
+                android:id="@+id/spinner_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_spinner"
+                android:entries="@array/filters"
+                android:spinnerMode="dropdown" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/text_brightness"
             style="@style/text"

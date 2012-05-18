@@ -18,6 +18,7 @@ precision mediump float;
 
 uniform sampler2D sTexture;
 
+uniform int uFilter;
 uniform float uBrightness;
 uniform float uContrast;
 uniform float uSaturation;
@@ -25,8 +26,77 @@ uniform float uCornerRadius;
 
 varying vec2 vTextureCoord;
 
+float overlayPixelComponents(float overlayComponent, float underlayComponent, float alpha) {
+	float underlay = underlayComponent * alpha;
+	return underlay * (underlay + (2.0 * overlayComponent * (1.0 - underlay)));
+}
+
+float multiplyPixelComponentsWithAlpha(float overlayComponent, float alpha, float underlayComponent) {
+	return underlayComponent * overlayComponent * alpha;
+}
+
+float screenPixelComponent(float maskPixelComponent, float alpha, float imagePixelComponent) {
+	return 1.0 - (1.0 - (maskPixelComponent * alpha)) * (1.0 - imagePixelComponent);
+}
+
 void main() {
 	vec3 color = texture2D(sTexture, vTextureCoord).rgb;
+	
+	// Black and White filter.
+	if (uFilter == 1) {
+		float gray = dot(color, vec3(0.299, 0.587, 0.114));
+		color = vec3(gray);
+	}
+	// Ansel filter.
+	if (uFilter == 2) {
+		if (color.r > 0.5) {
+			float rgb = 1.0 - (((1.0 - (2.0 * (color.r - 0.5))) * (1.0 - color.r)));
+			color.rgb = vec3(rgb);
+		} else {
+			float rgb = 2.0 * color.r * color.r;
+			color.rgb = vec3(rgb);
+		}
+	}
+	// Sepia filter.
+	if (uFilter == 3) {
+		float luminosity = dot(color, vec3(0.21, 0.72, 0.07));
+		float brightGray = luminosity + ((1.0 - luminosity) * (0.234375 / 2.0));
+		
+		float tintedR = overlayPixelComponents(0.419, brightGray, 1.0);
+		float tintedG = overlayPixelComponents(0.259, brightGray, 1.0);
+		float tintedB = overlayPixelComponents(0.047, brightGray, 1.0);
+		
+		float invertMask = 1.0 - luminosity;
+		float luminosity3 = pow(luminosity, 3.0);
+		
+		float r = (tintedR * invertMask);
+		float g = (tintedG * invertMask);
+		float b = (tintedG * invertMask);
+		
+		color.r = luminosity3 + (r * luminosity) + r;
+		color.g = luminosity3 + (g * luminosity) + g;
+		color.b = luminosity3 + (b * luminosity) + b;
+	}
+	// Retro filter.
+	if (uFilter == 4) {
+		float gray = dot(color, vec3(0.299, 0.587, 0.114));
+		
+		float r = overlayPixelComponents(gray, color.r, 1.0);
+		float g = overlayPixelComponents(gray, color.g, 1.0);
+		float b = overlayPixelComponents(gray, color.b, 1.0);
+	
+		r = multiplyPixelComponentsWithAlpha(0.984, 0.588235, r);
+		g = multiplyPixelComponentsWithAlpha(0.949, 0.588235, g);
+		b = multiplyPixelComponentsWithAlpha(0.639, 0.588235, b);
+		
+		r = screenPixelComponent(0.909, 0.2, r);
+		g = screenPixelComponent(0.396, 0.2, g);
+		b = screenPixelComponent(0.702, 0.2, b);
+		
+		color.r = screenPixelComponent(0.035, 0.168627, r);
+		color.g = screenPixelComponent(0.286, 0.168627, g);
+		color.b = screenPixelComponent(0.914, 0.168627, b);
+	}	
 	
 	color += uBrightness;
 	if (uContrast > 0.0) {
