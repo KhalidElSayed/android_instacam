@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.opengl.Matrix;
 
 /**
@@ -35,6 +36,7 @@ public class InstaCamCamera {
 	private final Camera.CameraInfo mCameraInfo = new Camera.CameraInfo();
 	// SharedData instance.
 	private InstaCamData mSharedData;
+	private SurfaceTexture mSurfaceTexture;
 
 	/**
 	 * Simply forwards call to underlying Camera.autoFocus.
@@ -55,6 +57,7 @@ public class InstaCamCamera {
 	 * instance.
 	 */
 	public void onPause() {
+		mSurfaceTexture = null;
 		if (mCamera != null) {
 			mCamera.stopPreview();
 			mCamera.release();
@@ -66,13 +69,35 @@ public class InstaCamCamera {
 	 * Should be called from Activity.onResume(). Recreates Camera instance.
 	 */
 	public void onResume() {
+		openCamera();
+	}
+
+	private void openCamera() {
+		if (mCamera != null) {
+			mCamera.stopPreview();
+			mCamera.release();
+			mCamera = null;
+		}
+
 		if (mCameraId >= 0) {
 			Camera.getCameraInfo(mCameraId, mCameraInfo);
 			mCamera = Camera.open(mCameraId);
+
+			try {
+				if (mSurfaceTexture != null) {
+					mCamera.setPreviewTexture(mSurfaceTexture);
+					mCamera.startPreview();
+				}
+			} catch (Exception ex) {
+
+			}
 		}
 
 		if (mCamera != null && mSharedData != null) {
 			int orientation = mCameraInfo.orientation;
+			if (mCameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
+				orientation = (orientation + 180) % 360;
+			}
 			Matrix.setRotateM(mSharedData.mOrientationM, 0, orientation, 0f,
 					0f, 1f);
 
@@ -89,19 +114,12 @@ public class InstaCamCamera {
 			mSharedData.mAspectRatioPreview[1] = (float) Math.min(size.width,
 					size.height) / size.height;
 		}
-
 	}
 
 	/**
 	 * Selects either front-facing or back-facing camera.
 	 */
 	public void setCamera(int facing) {
-		if (mCamera != null) {
-			mCamera.stopPreview();
-			mCamera.release();
-			mCamera = null;
-		}
-
 		mCameraId = -1;
 		int numberOfCameras = Camera.getNumberOfCameras();
 		for (int i = 0; i < numberOfCameras; ++i) {
@@ -111,6 +129,8 @@ public class InstaCamCamera {
 				break;
 			}
 		}
+
+		openCamera();
 	}
 
 	/**
@@ -118,6 +138,7 @@ public class InstaCamCamera {
 	 */
 	public void setPreviewTexture(SurfaceTexture surfaceTexture)
 			throws IOException {
+		mSurfaceTexture = surfaceTexture;
 		mCamera.setPreviewTexture(surfaceTexture);
 	}
 
@@ -134,7 +155,7 @@ public class InstaCamCamera {
 	public void startPreview() {
 		mCamera.startPreview();
 	}
-	
+
 	/**
 	 * Simply forwards call to Camera.stopPreview.
 	 */

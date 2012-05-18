@@ -22,5 +22,5 @@ varying vec2 vTextureCoord;
 
 void main() {
 	gl_Position = vec4(aPosition, 0.0, 1.0);
-	vTextureCoord = (((uOrientationM * gl_Position + 1.0) * 0.5) * uTransformM).xy;
+	vTextureCoord = (uTransformM * ((uOrientationM * gl_Position + 1.0) * 0.5)).xy;
 }

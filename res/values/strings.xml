@@ -14,7 +14,7 @@
     <string name="button_save">Save</string>
 
     <!-- SeekBar strings -->
-    <string name="seekbar_brightness">Adjust Brightness (%+d)</string>
+    <string name="seekbar_brightness"><u>Adjust Brightness (%+d)</u></string>
     <string name="seekbar_contrast">Adjust Contrast (%+d)</string>
     <string name="seekbar_saturation">Adjust Saturation (%+d)</string>
     <string name="seekbar_corner_radius">Adjust Corner Radius (%+d)</string>
