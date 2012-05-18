@@ -167,17 +167,19 @@ public class InstaCamActivity extends Activity {
 		animButton.setDuration(700);
 		animButton.setAnimationListener(new Animation.AnimationListener() {
 			@Override
-			public void onAnimationStart(Animation animation) {
-			}
-			@Override
-			public void onAnimationRepeat(Animation animation) {
-			}
-			@Override
 			public void onAnimationEnd(Animation animation) {
 				mCamera.setCamera(facing);
 			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
 		});
-		
+
 		button.setAnimation(animButton);
 		animButton.startNow();
 	}

@@ -9,8 +9,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:background="@drawable/bg_header"
-        android:padding="5dp" >
+        android:background="@drawable/bg_header" >
 
         <TextView
             style="@style/text"
@@ -18,9 +17,12 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:shadowColor="#124"
+            android:shadowRadius="6"
             android:text="@string/title"
             android:textColor="#EEE"
-            android:textSize="16sp" />
+            android:textSize="20sp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -32,37 +34,32 @@
             <ImageView
                 android:layout_width="1dp"
                 android:layout_height="25dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
                 android:src="@drawable/bg_separator_button" />
 
             <ImageButton
                 android:id="@+id/button_rotate"
-                style="@style/buttonSmall"
+                style="@style/button_header"
                 android:src="@drawable/ic_rotate" />
 
             <ImageView
                 android:layout_width="1dp"
                 android:layout_height="25dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
                 android:src="@drawable/bg_separator_button" />
 
             <ImageButton
                 android:id="@+id/button_menu"
-                style="@style/buttonSmall"
+                style="@style/button_header"
                 android:src="@drawable/ic_menu" />
 
             <ImageView
                 android:layout_width="1dp"
                 android:layout_height="25dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
                 android:src="@drawable/bg_separator_button" />
 
             <ImageButton
                 android:id="@+id/button_exit"
-                style="@style/buttonSmall"
+                style="@style/button_header"
+                android:padding="5dp"
                 android:src="@drawable/ic_exit" />
         </LinearLayout>
     </RelativeLayout>
@@ -86,19 +83,17 @@
 
             <ImageView
                 android:layout_width="1dp"
-                android:layout_height="25dp"
-                android:layout_marginRight="10dp"
+                android:layout_height="40dp"
                 android:src="@drawable/bg_separator_button" />
 
             <ImageButton
                 android:id="@+id/button_shoot"
-                style="@style/button"
+                style="@style/button_footer"
                 android:src="@drawable/ic_shoot" />
 
             <ImageView
                 android:layout_width="1dp"
-                android:layout_height="25dp"
-                android:layout_marginLeft="10dp"
+                android:layout_height="40dp"
                 android:src="@drawable/bg_separator_button" />
         </LinearLayout>
 
@@ -113,20 +108,20 @@
 
             <ImageButton
                 android:id="@+id/button_cancel"
-                style="@style/button"
+                style="@style/button_footer"
+                android:padding="10dp"
                 android:src="@drawable/ic_cancel" />
 
             <ImageView
                 android:layout_width="1dp"
-                android:layout_height="25dp"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="20dp"
+                android:layout_height="40dp"
                 android:src="@drawable/bg_separator_button" />
 
             <ImageButton
                 android:id="@+id/button_save"
-                style="@style/button"
+                style="@style/button_footer"
                 android:layout_toRightOf="@id/button_cancel"
+                android:padding="10dp"
                 android:src="@drawable/ic_save" />
         </LinearLayout>
     </RelativeLayout>
