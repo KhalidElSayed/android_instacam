@@ -134,5 +134,12 @@ public class InstaCamCamera {
 	public void startPreview() {
 		mCamera.startPreview();
 	}
+	
+	/**
+	 * Simply forwards call to Camera.stopPreview.
+	 */
+	public void stopPreview() {
+		mCamera.stopPreview();
+	}
 
 }

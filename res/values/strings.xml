@@ -3,12 +3,11 @@
 
     <!-- Common strings -->
     <string name="app_name">InstaCam</string>
-    <string name="title"><u>InstaCam</u></string>
+    <string name="title">InstaCam</string>
     <string name="saving">Saving picture..</string>
     <string name="focus_failed">Auto focusing failed.</string>
 
     <!-- Button texts -->
-    <string name="button_menu">Menu</string>
     <string name="button_exit">Exit</string>
     <string name="button_shoot">Shoot</string>
     <string name="button_cancel">Cancel</string>

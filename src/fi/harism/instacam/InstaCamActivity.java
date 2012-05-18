@@ -41,9 +41,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.TranslateAnimation;
+import android.widget.ImageButton;
+import android.widget.ImageSwitcher;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
 
 /**
  * The one and only Activity for this camera application.
@@ -103,11 +111,28 @@ public class InstaCamActivity extends Activity {
 		// Hide menu view by default.
 		View menu = findViewById(R.id.menu);
 		menu.setVisibility(View.GONE);
+		
+		/*
+		ViewAnimator animator = (ViewAnimator)findViewById(R.id.button_menu_switcher);
+		ScaleAnimation animIn = new ScaleAnimation(1f, 1f, 0f, -1f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.5f);
+		animIn.setDuration(500);
+		ScaleAnimation animOut = new ScaleAnimation(1f, 1f, 1f, 0f, Animation.RELATIVE_TO_SELF,0.0f, Animation.RELATIVE_TO_SELF,0.5f);
+		animOut.setDuration(500);
+		animator.setInAnimation(animIn);
+		animator.setOutAnimation(animOut);
+		*/
 
+		/*
 		// Set transition for root view (hide/show menu).
 		LayoutTransition layoutTransition = new LayoutTransition();
 		layoutTransition.setDuration(250);
 		ViewGroup viewGroup = (ViewGroup) findViewById(R.id.root);
+		viewGroup.setLayoutTransition(layoutTransition);
+		
+		// Set transition for footer (switch "shoot" / "cancel"&"save").
+		layoutTransition = new LayoutTransition();
+		layoutTransition.setDuration(250);
+		viewGroup = (ViewGroup) findViewById(R.id.header);
 		viewGroup.setLayoutTransition(layoutTransition);
 
 		// Set transition for footer (switch "shoot" / "cancel"&"save").
@@ -115,7 +140,8 @@ public class InstaCamActivity extends Activity {
 		layoutTransition.setDuration(250);
 		viewGroup = (ViewGroup) findViewById(R.id.footer);
 		viewGroup.setLayoutTransition(layoutTransition);
-
+		*/
+		
 		// Set Button OnClickListeners.
 		findViewById(R.id.button_exit).setOnClickListener(mObserverButton);
 		findViewById(R.id.button_shoot).setOnClickListener(mObserverButton);
@@ -181,12 +207,7 @@ public class InstaCamActivity extends Activity {
 			// Pressing menu button switches menu visibility.
 			case R.id.button_menu:
 				View view = findViewById(R.id.menu);
-				if (view.getVisibility() == View.GONE
-						|| view.getVisibility() == View.INVISIBLE) {
-					view.setVisibility(View.VISIBLE);
-				} else {
-					view.setVisibility(View.GONE);
-				}
+				setMenuVisible(view.getVisibility() != View.VISIBLE);
 				break;
 			// Save button starts separate thread for saving picture.
 			case R.id.button_save:
@@ -209,6 +230,59 @@ public class InstaCamActivity extends Activity {
 
 	}
 
+	private final void setMenuVisible(boolean visible) {
+		View menu = findViewById(R.id.menu);
+		View button = findViewById(R.id.button_menu);
+		
+		if (visible) {
+			AnimationSet animMenu = new AnimationSet(true);
+			animMenu.addAnimation(new ScaleAnimation(1f, 1f, 0f, 1f));
+			animMenu.addAnimation(new AlphaAnimation(0f, 1f));
+			menu.setAnimation(animMenu);
+			menu.setVisibility(View.VISIBLE);
+			animMenu.setDuration(500);
+			animMenu.startNow();
+			
+			ScaleAnimation animButton = new ScaleAnimation(1f, 1f, 1f, -1f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.5f);
+			button.setAnimation(animButton);
+			animButton.setDuration(500);
+			animButton.setFillAfter(true);
+			animButton.startNow();
+		} else  {
+			AnimationSet animMenu = new AnimationSet(true);
+			animMenu.addAnimation(new ScaleAnimation(1f, 1f, 1f, 0f));
+			animMenu.addAnimation(new AlphaAnimation(1f, 0f));
+			
+			menu.setAnimation(animMenu);
+			animMenu.setDuration(500);
+			animMenu.setAnimationListener(new Animation.AnimationListener() {
+				@Override
+				public void onAnimationEnd(Animation anim) {
+					findViewById(R.id.menu).setVisibility(View.GONE);
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation anim) {
+				}
+
+				@Override
+				public void onAnimationStart(Animation anim) {
+				}
+			});
+			animMenu.startNow();
+			menu.invalidate();
+			
+			ScaleAnimation animButton = new ScaleAnimation(1f, 1f, -1f, 1f, Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF, 0.5f);
+			button.setAnimation(animButton);
+			animButton.setDuration(500);
+			animButton.setFillAfter(true);
+			animButton.startNow();
+		}
+		
+		
+		
+	}
+	
 	/**
 	 * Class for implementing Camera related callbacks.
 	 */
@@ -252,6 +326,7 @@ public class InstaCamActivity extends Activity {
 		public void onSurfaceTextureCreated(SurfaceTexture surfaceTexture) {
 			// Once we have SurfaceTexture try setting it to Camera.
 			try {
+				mCamera.stopPreview();
 				mCamera.setPreviewTexture(surfaceTexture);
 				mCamera.startPreview();
 			} catch (final Exception ex) {

@@ -212,12 +212,6 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		mAspectRatio[0] = (float) Math.min(mWidth, mHeight) / mWidth;
 		mAspectRatio[1] = (float) Math.min(mWidth, mHeight) / mHeight;
 
-		// If SurfaceTexture != null release and destroy it.
-		if (mSurfaceTexture != null) {
-			mSurfaceTexture.release();
-			mSurfaceTexture = null;
-		}
-
 		// Initialize textures.
 		mFboExternal.reset();
 		mFboExternal.init(mWidth, mHeight, 1, true);
@@ -225,10 +219,14 @@ public class InstaCamRenderer extends GLSurfaceView implements
 		mFboOffscreen.init(mWidth, mHeight, 1, false);
 
 		// Allocate new SurfaceTexture.
+		SurfaceTexture oldSurfaceTexture = mSurfaceTexture;
 		mSurfaceTexture = new SurfaceTexture(mFboExternal.getTexture(0));
 		mSurfaceTexture.setOnFrameAvailableListener(this);
 		if (mObserver != null) {
 			mObserver.onSurfaceTextureCreated(mSurfaceTexture);
+		}
+		if (oldSurfaceTexture != null) {
+			oldSurfaceTexture.release();
 		}
 
 		requestRender();
