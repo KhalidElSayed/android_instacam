@@ -193,8 +193,10 @@ public class InstaCamRenderer extends GLSurfaceView implements
 	@Override
 	public synchronized void onPause() {
 		super.onPause();
-		mSurfaceTexture.release();
-		mSurfaceTexture = null;
+		if (mSurfaceTexture != null) {
+			mSurfaceTexture.release();
+			mSurfaceTexture = null;
+		}
 	}
 
 	@Override

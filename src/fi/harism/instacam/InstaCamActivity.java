@@ -515,10 +515,10 @@ public class InstaCamActivity extends Activity {
 				mPreferences.edit()
 						.putInt(getString(R.string.key_saturation), progress)
 						.commit();
-				mSharedData.mSaturation = (progress - 8) / 8f;
+				mSharedData.mSaturation = (progress - 5) / 10f;
 				TextView textView = (TextView) findViewById(R.id.text_saturation);
 				textView.setText(getString(R.string.seekbar_saturation,
-						progress - 8));
+						progress - 5));
 				break;
 			}
 			// On radius recalculate shared value and update preferences.

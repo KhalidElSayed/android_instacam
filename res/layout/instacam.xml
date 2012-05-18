@@ -203,7 +203,7 @@
             android:id="@+id/seekbar_contrast"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:max="13" />
+            android:max="10" />
 
         <TextView
             android:id="@+id/text_saturation"
@@ -224,7 +224,7 @@
             android:id="@+id/seekbar_saturation"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:max="16" />
+            android:max="10" />
 
         <TextView
             android:id="@+id/text_corner_radius"
