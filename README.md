@@ -17,6 +17,11 @@ icon pack to be more precise - which is released under
 [Creative Commons -license](http://creativecommons.org/licenses/by-nc-nd/3.0/) and
 should be legal for usage under non-commercial applications.
 
+Other icons used in the application are taken from Faience icon theme made by
+[Matthieu James](http://tiheum.deviantart.com/). These icons are licensed under
+GPLv3 license and it should be sufficient to provide my slightly modified versions
+here among with other source code..
+
 Beyond this icon, all code what-so-ever textual content, including shaders, layouts etc,
 is licensed under Apache 2.0 License and can be used in commercial or personal projects.
 See LICENSE for more information. See NOTICE for any exceptions if any occur.
