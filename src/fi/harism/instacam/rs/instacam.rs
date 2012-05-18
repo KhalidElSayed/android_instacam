@@ -172,10 +172,12 @@ void filterImpl(rs_allocation allocation, int filter, float brightness,
 			// Ansel filter.
 			case 2:
 			{
-				if (color.r > 0.5) {
-					color = 1.0 - (1.0 - 2.0 * (color.r - 0.5)) * (1.0 - color.r);
+				float3 tmp1 = { 0.299f, 0.587f, 0.114f };
+				float gray = dot(color, tmp1);
+				if (gray > 0.5f) {
+					color = 1.0f - (1.0f - 2.0f * (gray - 0.5f)) * (1.0f - gray);
 				} else {
-					color = 2.0 * color.r * color.r;
+					color = 2.0f * gray * gray;
 				}
 				break;
 			}
