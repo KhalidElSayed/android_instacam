@@ -47,8 +47,8 @@ public class InstaCamRS {
 	public void applyFilter(Bitmap bitmap, InstaCamData data) {
 		Allocation allocation = Allocation.createFromBitmap(mRS, bitmap,
 				Allocation.MipmapControl.MIPMAP_NONE, Allocation.USAGE_SCRIPT);
-		mScript.invoke_filterImpl(allocation, data.mBrightness, data.mContrast,
-				data.mSaturation, data.mCornerRadius);
+		mScript.invoke_filterImpl(allocation, data.mFilter, data.mBrightness,
+				data.mContrast, data.mSaturation, data.mCornerRadius);
 		allocation.copyTo(bitmap);
 		allocation.destroy();
 	}
