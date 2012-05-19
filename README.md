@@ -1,15 +1,15 @@
 Introduction
 ============
 
-InstaCam, Instagram alike application for realtime photographing manipulation. Unlike Instagram,
-InstaCam allows user to adjust color filters in realtime with use of OpenGL ES 2.0 external
-textures. This allows camera preview to be rendered on screen using regular OpenGL ES 2.0
-GLSL shaders and in return make it possible to adjust image in realtime.
+InstaCam, sort of a Instagram alike application for realtime photographing manipulation.
+Unlike Instagram, InstaCam allows user to adjust color filters in realtime with use of
+OpenGL ES 2.0 external OES textures. This allows camera preview to be rendered on
+screen using regular OpenGL ES 2.0 GLSL shaders and in return make it possible to
+apply image filters in realtime. While at the same time it's somewhat easy task to
+maintain same shader code as RenderSctipt implementation for final picture saving.
 
-Unlike most of the other applications this one will not end up to the Play Market soonish.
-Mainly for reason I'm using API level 15+ requirement and the whole project is more of
-an exercise for beefing one's knowledge on OpenGL external OES textures and RenderScript.
-Latter one is supposed to be used for final image constitution eventually.
+Application requires API 15+ so it ain't prime time for it yet but for ones with
+ICS update go get it at; http://play.google.com/store/apps/details?id=fi.harism.instacam .
 
 License
 =======
