@@ -69,6 +69,8 @@ public class InstaCamActivity extends Activity {
 	private final RendererObserver mObserverRenderer = new RendererObserver();
 	// Common observer for all SeekBars.
 	private final SeekBarObserver mObserverSeekBar = new SeekBarObserver();
+	// Common observer for all Spinners.
+	private final SpinnerObserver mObserverSpinner = new SpinnerObserver();
 	// Application shared preferences instance.
 	private SharedPreferences mPreferences;
 	// Preview texture renderer class.
@@ -130,21 +132,7 @@ public class InstaCamActivity extends Activity {
 
 		// Set observer for filter Spinner.
 		Spinner spinner = (Spinner) findViewById(R.id.spinner_filter);
-		spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view,
-					int position, long id) {
-				mPreferences.edit()
-						.putInt(getString(R.string.key_filter), position)
-						.commit();
-				mSharedData.mFilter = position;
-				mRenderer.requestRender();
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> parent) {
-			}
-		});
+		spinner.setOnItemSelectedListener(mObserverSpinner);
 		mSharedData.mFilter = mPreferences.getInt(
 				getString(R.string.key_filter), 0);
 		spinner.setSelection(mSharedData.mFilter);
@@ -544,6 +532,24 @@ public class InstaCamActivity extends Activity {
 
 		@Override
 		public void onStopTrackingTouch(SeekBar seekBar) {
+		}
+	}
+
+	/**
+	 * Class for implementing Spinner related callbacks.
+	 */
+	private class SpinnerObserver implements AdapterView.OnItemSelectedListener {
+		@Override
+		public void onItemSelected(AdapterView<?> parent, View view,
+				int position, long id) {
+			mPreferences.edit()
+					.putInt(getString(R.string.key_filter), position).commit();
+			mSharedData.mFilter = position;
+			mRenderer.requestRender();
+		}
+
+		@Override
+		public void onNothingSelected(AdapterView<?> parent) {
 		}
 	}
 
