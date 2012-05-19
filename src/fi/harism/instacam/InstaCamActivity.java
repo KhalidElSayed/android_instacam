@@ -24,19 +24,21 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
-import android.hardware.Camera.CameraInfo;
+import android.hardware.SensorManager;
+import android.media.ExifInterface;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.provider.MediaStore.MediaColumns;
+import android.view.OrientationEventListener;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -65,6 +67,8 @@ public class InstaCamActivity extends Activity {
 	private final ButtonObserver mObserverButton = new ButtonObserver();
 	// Camera observer for handling picture taking.
 	private final CameraObserver mObserverCamera = new CameraObserver();
+	// Device orientation observer.
+	private OrientationObserver mObserverOrientation;
 	// Observer for handling SurfaceTexture creation.
 	private final RendererObserver mObserverRenderer = new RendererObserver();
 	// Common observer for all SeekBars.
@@ -96,9 +100,11 @@ public class InstaCamActivity extends Activity {
 
 		// Instantiate RenderScript.
 		mInstaCamRS = new InstaCamRS(this);
+		// Instantieate device orientation observer.
+		mObserverOrientation = new OrientationObserver(this);
 
 		// Instantiate camera handler.
-		mCamera.setCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+		mCamera.setCameraFront(false);
 		mCamera.setSharedData(mSharedData);
 
 		// Set content view.
@@ -167,6 +173,7 @@ public class InstaCamActivity extends Activity {
 		super.onPause();
 		mCamera.onPause();
 		mRenderer.onPause();
+		mObserverOrientation.disable();
 	}
 
 	@Override
@@ -174,9 +181,13 @@ public class InstaCamActivity extends Activity {
 		super.onResume();
 		mCamera.onResume();
 		mRenderer.onResume();
+
+		if (mObserverOrientation.canDetectOrientation()) {
+			mObserverOrientation.enable();
+		}
 	}
 
-	private final void setCamera(final int facing) {
+	private final void setCameraFront(final boolean front) {
 		View button = findViewById(R.id.button_rotate);
 
 		RotateAnimation animButton = new RotateAnimation(0, 360,
@@ -186,7 +197,7 @@ public class InstaCamActivity extends Activity {
 		animButton.setAnimationListener(new Animation.AnimationListener() {
 			@Override
 			public void onAnimationEnd(Animation animation) {
-				mCamera.setCamera(facing);
+				mCamera.setCameraFront(front);
 			}
 
 			@Override
@@ -264,10 +275,12 @@ public class InstaCamActivity extends Activity {
 			case R.id.button_exit:
 				finish();
 				break;
-			// On shoot trigger autoFocus. This call ends to
-			// CameraObserver.onAutoFocus eventually.
+			// On shoot trigger picture taking.
 			case R.id.button_shoot:
-				mCamera.autoFocus(mObserverCamera);
+				// We do not want to receive orientation changes until picture
+				// is either saved or cancelled.
+				mObserverOrientation.disable();
+				mCamera.takePicture(mObserverCamera);
 				break;
 			// Pressing menu button switches menu visibility.
 			case R.id.button_menu:
@@ -289,13 +302,11 @@ public class InstaCamActivity extends Activity {
 				findViewById(R.id.buttons_shoot).setVisibility(View.VISIBLE);
 				findViewById(R.id.buttons_cancel_save).setVisibility(View.GONE);
 				mCamera.startPreview();
+				// Re-enable orientation observer.
+				mObserverOrientation.enable();
 				break;
 			case R.id.button_rotate:
-				if (mCamera.getCameraInfo().facing == CameraInfo.CAMERA_FACING_FRONT) {
-					setCamera(CameraInfo.CAMERA_FACING_BACK);
-				} else {
-					setCamera(CameraInfo.CAMERA_FACING_FRONT);
-				}
+				setCameraFront(!mCamera.isCameraFront());
 				break;
 			}
 		}
@@ -305,22 +316,18 @@ public class InstaCamActivity extends Activity {
 	/**
 	 * Class for implementing Camera related callbacks.
 	 */
-	private final class CameraObserver implements Camera.ShutterCallback,
-			Camera.AutoFocusCallback, Camera.PictureCallback {
+	private final class CameraObserver implements InstaCamCamera.Observer {
 		@Override
-		public void onAutoFocus(boolean success, Camera camera) {
+		public void onAutoFocus(boolean success) {
 			// If auto focus failed show brief notification about it.
 			if (!success) {
 				Toast.makeText(InstaCamActivity.this, R.string.focus_failed,
 						Toast.LENGTH_SHORT).show();
 			}
-			// And continue with taking the picture. This call will end up to
-			// onPictureTaken eventually.
-			camera.takePicture(this, null, this);
 		}
 
 		@Override
-		public void onPictureTaken(byte[] data, Camera camera) {
+		public void onPictureTaken(byte[] data) {
 			// Once picture is taken just store its data.
 			mSharedData.mImageData = data;
 			// And time it was taken.
@@ -333,6 +340,50 @@ public class InstaCamActivity extends Activity {
 			// At the point picture is actually taken switch footer buttons.
 			findViewById(R.id.buttons_cancel_save).setVisibility(View.VISIBLE);
 			findViewById(R.id.buttons_shoot).setVisibility(View.GONE);
+		}
+
+	}
+
+	/**
+	 * Class for observing device orientation.
+	 */
+	private class OrientationObserver extends OrientationEventListener {
+
+		public OrientationObserver(Context context) {
+			super(context, SensorManager.SENSOR_DELAY_NORMAL);
+			disable();
+		}
+
+		@Override
+		public void onOrientationChanged(int orientation) {
+			orientation = (((orientation + 45) / 90) * 90) % 360;
+			if (orientation != mSharedData.mOrientationDevice) {
+
+				// Prevent 270 degree turns.
+				int original = mSharedData.mOrientationDevice;
+				if (Math.abs(orientation - original) > 180) {
+					if (orientation > original) {
+						original += 360;
+					} else {
+						original -= 360;
+					}
+				}
+
+				// Trigger rotation animation.
+				View shoot = findViewById(R.id.button_shoot);
+				RotateAnimation anim = new RotateAnimation(-original,
+						-orientation, Animation.RELATIVE_TO_SELF, 0.5f,
+						Animation.RELATIVE_TO_SELF, 0.5f);
+				anim.setDuration(500);
+				anim.setFillAfter(true);
+				shoot.setAnimation(anim);
+				anim.startNow();
+				shoot.invalidate();
+
+				// Store and calculate new orientation values.
+				mSharedData.mOrientationDevice = orientation;
+				mCamera.updateRotation();
+			}
 		}
 
 	}
@@ -411,6 +462,28 @@ public class InstaCamActivity extends Activity {
 				fos.close();
 				bitmap.recycle();
 
+				ExifInterface exif = new ExifInterface(
+						filePath.getAbsolutePath());
+				switch (mCamera.getOrientation()) {
+				case 90:
+					exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer
+							.toString(ExifInterface.ORIENTATION_ROTATE_90));
+					break;
+				case 180:
+					exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer
+							.toString(ExifInterface.ORIENTATION_ROTATE_180));
+					break;
+				case 270:
+					exif.setAttribute(ExifInterface.TAG_ORIENTATION, Integer
+							.toString(ExifInterface.ORIENTATION_ROTATE_270));
+					break;
+				default:
+					exif.setAttribute(ExifInterface.TAG_ORIENTATION,
+							Integer.toString(ExifInterface.ORIENTATION_NORMAL));
+					break;
+				}
+				exif.saveAttributes();
+
 				// Add picture to content resolver.
 				ContentValues v = new ContentValues();
 				v.put(MediaColumns.TITLE, pictureName);
@@ -420,8 +493,7 @@ public class InstaCamActivity extends Activity {
 				v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
 				v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
 				v.put(MediaColumns.MIME_TYPE, "image/jpeg");
-				v.put(ImageColumns.ORIENTATION,
-						mCamera.getCameraInfo().orientation);
+				v.put(ImageColumns.ORIENTATION, mCamera.getOrientation());
 				v.put(MediaColumns.DATA, filePath.getAbsolutePath());
 
 				File parent = filePath.getParentFile();
@@ -456,6 +528,7 @@ public class InstaCamActivity extends Activity {
 					findViewById(R.id.buttons_cancel_save).setVisibility(
 							View.GONE);
 					mCamera.startPreview();
+					mObserverOrientation.enable();
 					if (errorMsg != null) {
 						Toast.makeText(InstaCamActivity.this, errorMsg,
 								Toast.LENGTH_LONG).show();

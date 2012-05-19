@@ -34,6 +34,8 @@ public class InstaCamData {
 	public ProgressDialog mImageProgress;
 	// Picture capture time.
 	public long mImageTime;
+	// Device orientation degree.
+	public int mOrientationDevice;
 	// Camera orientation matrix.
 	public final float mOrientationM[] = new float[16];
 }

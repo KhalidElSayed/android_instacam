@@ -36,20 +36,22 @@ public class InstaCamCamera {
 	private final Camera.CameraInfo mCameraInfo = new Camera.CameraInfo();
 	// SharedData instance.
 	private InstaCamData mSharedData;
+	// Surface texture instance.
 	private SurfaceTexture mSurfaceTexture;
 
-	/**
-	 * Simply forwards call to underlying Camera.autoFocus.
-	 */
-	public void autoFocus(Camera.AutoFocusCallback callback) {
-		mCamera.autoFocus(callback);
+	public int getOrientation() {
+		if (mCameraInfo == null || mSharedData == null) {
+			return 0;
+		}
+		if (mCameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
+			return (mCameraInfo.orientation - mSharedData.mOrientationDevice + 360) % 360;
+		} else {
+			return (mCameraInfo.orientation + mSharedData.mOrientationDevice) % 360;
+		}
 	}
 
-	/**
-	 * Getter for current Camera CameraInfo.
-	 */
-	public Camera.CameraInfo getCameraInfo() {
-		return mCameraInfo;
+	public boolean isCameraFront() {
+		return mCameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT;
 	}
 
 	/**
@@ -72,6 +74,9 @@ public class InstaCamCamera {
 		openCamera();
 	}
 
+	/**
+	 * Handles camera opening.
+	 */
 	private void openCamera() {
 		if (mCamera != null) {
 			mCamera.stopPreview();
@@ -82,44 +87,30 @@ public class InstaCamCamera {
 		if (mCameraId >= 0) {
 			Camera.getCameraInfo(mCameraId, mCameraInfo);
 			mCamera = Camera.open(mCameraId);
-
+			// Disable jpeg rotation. We'll put it to EXIF data ourselves once
+			// final picture is saved.
+			Camera.Parameters params = mCamera.getParameters();
+			params.setRotation(0);
+			mCamera.setParameters(params);
 			try {
 				if (mSurfaceTexture != null) {
 					mCamera.setPreviewTexture(mSurfaceTexture);
 					mCamera.startPreview();
 				}
 			} catch (Exception ex) {
-
 			}
 		}
 
-		if (mCamera != null && mSharedData != null) {
-			int orientation = mCameraInfo.orientation;
-			if (mCameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
-				orientation = (orientation + 180) % 360;
-			}
-			Matrix.setRotateM(mSharedData.mOrientationM, 0, orientation, 0f,
-					0f, 1f);
-
-			Camera.Size size = mCamera.getParameters().getPreviewSize();
-
-			if (orientation % 90 == 0) {
-				int w = size.width;
-				size.width = size.height;
-				size.height = w;
-			}
-
-			mSharedData.mAspectRatioPreview[0] = (float) Math.min(size.width,
-					size.height) / size.width;
-			mSharedData.mAspectRatioPreview[1] = (float) Math.min(size.width,
-					size.height) / size.height;
-		}
+		updateRotation();
 	}
 
 	/**
 	 * Selects either front-facing or back-facing camera.
 	 */
-	public void setCamera(int facing) {
+	public void setCameraFront(boolean frontFacing) {
+		int facing = frontFacing ? CameraInfo.CAMERA_FACING_FRONT
+				: CameraInfo.CAMERA_FACING_BACK;
+
 		mCameraId = -1;
 		int numberOfCameras = Camera.getNumberOfCameras();
 		for (int i = 0; i < numberOfCameras; ++i) {
@@ -161,6 +152,88 @@ public class InstaCamCamera {
 	 */
 	public void stopPreview() {
 		mCamera.stopPreview();
+	}
+
+	/**
+	 * Handles picture taking callbacks etc etc.
+	 */
+	public void takePicture(Observer observer) {
+		mCamera.autoFocus(new CameraObserver(observer));
+	}
+
+	/**
+	 * Updated rotation matrix, aspect ratio etc.
+	 */
+	public void updateRotation() {
+		if (mCamera == null || mSharedData == null) {
+			return;
+		}
+
+		int orientation = mCameraInfo.orientation;
+		Matrix.setRotateM(mSharedData.mOrientationM, 0, orientation, 0f, 0f, 1f);
+
+		Camera.Size size = mCamera.getParameters().getPreviewSize();
+		if (orientation % 90 == 0) {
+			int w = size.width;
+			size.width = size.height;
+			size.height = w;
+		}
+
+		mSharedData.mAspectRatioPreview[0] = (float) Math.min(size.width,
+				size.height) / size.width;
+		mSharedData.mAspectRatioPreview[1] = (float) Math.min(size.width,
+				size.height) / size.height;
+	}
+
+	/**
+	 * Class for implementing Camera related callbacks.
+	 */
+	private final class CameraObserver implements Camera.ShutterCallback,
+			Camera.AutoFocusCallback, Camera.PictureCallback {
+
+		private Observer mObserver;
+
+		private CameraObserver(Observer observer) {
+			mObserver = observer;
+		}
+
+		@Override
+		public void onAutoFocus(boolean success, Camera camera) {
+			mObserver.onAutoFocus(success);
+			mCamera.takePicture(this, null, this);
+		}
+
+		@Override
+		public void onPictureTaken(byte[] data, Camera camera) {
+			mObserver.onPictureTaken(data);
+		}
+
+		@Override
+		public void onShutter() {
+			mObserver.onShutter();
+		}
+
+	}
+
+	/**
+	 * Interface for observing picture taking process.
+	 */
+	public interface Observer {
+
+		/**
+		 * Called once auto focus is done.
+		 */
+		public void onAutoFocus(boolean success);
+
+		/**
+		 * Called once picture has been taken.
+		 */
+		public void onPictureTaken(byte[] jpeg);
+
+		/**
+		 * Called to notify about shutter event.
+		 */
+		public void onShutter();
 	}
 
 }
