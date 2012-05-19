@@ -138,6 +138,7 @@ public class InstaCamActivity extends Activity {
 						.putInt(getString(R.string.key_filter), position)
 						.commit();
 				mSharedData.mFilter = position;
+				mRenderer.requestRender();
 			}
 
 			@Override
