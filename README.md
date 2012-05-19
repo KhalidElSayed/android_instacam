@@ -11,6 +11,9 @@ Mainly for reason I'm using API level 15+ requirement and the whole project is m
 an exercise for beefing one's knowledge on OpenGL external OES textures and RenderScript.
 Latter one is supposed to be used for final image constitution eventually.
 
+License
+=======
+
 Application icon used within .APK installation file and on Google Play -market, is taken
 from icon pack by [Yanko Andreev](http://yankoa.deviantart.com/). From his MetroDroid
 icon pack to be more precise - which is released under
@@ -27,6 +30,5 @@ Photo Processing project into GLSL and RenderScript code. For filters that is. I
 highly recommended to take a look on this project if you're into familiarizing
 yourself with color filters.
 
-Beyond this icon, all code what-so-ever textual content, including shaders, layouts etc,
-is licensed under Apache 2.0 License and can be used in commercial or personal projects.
-See LICENSE for more information. See NOTICE for any exceptions if any occur.
+Beyond these exceptions, all code what-so-ever textual content, including shaders, layouts etc,
+is licensed under Apache 2.0 License (http://www.apache.org/licenses/LICENSE-2.0.html) and can be used in commercial or personal projects.
