@@ -22,6 +22,7 @@
 static float brightness_value;
 static float contrast_value;
 static float saturation_value;
+static float corner_radius_value;
 	
 void setBrightness(float value) {
 	brightness_value = value;
@@ -39,21 +40,11 @@ void setSaturation(float value) {
 	}
 }
 
-void root(uchar4* v_color) {
-	float3 color = rsUnpackColor8888(*v_color).rgb;
-	
-	// Adjust color brightness, contrast and saturation.
-	color = brightness(color, brightness_value);
-	color = contrast(color, contrast_value);
-	float average = dot(color, 1.0f) / 3.0f;
-	color += (average - color) * saturation_value;
-
-	// Finally store color value back to allocation.
-	color = clamp(color, 0.0f, 1.0f);
-	*v_color = rsPackColorTo8888(color);
+void setCornerRadius(float value) {
+	corner_radius_value = value;
 }
 
-void corners(rs_allocation allocation, float cornerRadius) {
+void apply(rs_allocation allocation) {
 
 	// Get image dimensions from allocation.
 	uint32_t width = rsAllocationGetDimX(allocation);
@@ -61,33 +52,40 @@ void corners(rs_allocation allocation, float cornerRadius) {
 	
 	// Calculate some inverse values for making
 	// it possible to use multiplication instead.
-	float invWidth = 1.0f / width;
-	float invHeight = 1.0f / height;
-	float invCornerRadius = 1.0f / cornerRadius;
+	float inv_width = 1.0f / width;
+	float inv_height = 1.0f / height;
+	float inv_corner_radius = 1.0f / corner_radius_value;
 	float sqrt2 = sqrt(2.0f);
 	
 	// Texture position within [0.0f, 1.0f] range.
-	float2 texPos;
+	float2 tex_pos;
 	
 	// Outer loop horizontally.
 	for (uint32_t xx = 0; xx < width; ++xx) {
 		
 		// Calculate texture position from xx.
-		texPos.x = xx * invWidth;
+		tex_pos.x = xx * inv_width;
 	
 		// Inner loop vertically.
 		for (uint32_t yy = 0; yy < height; ++yy) {
 			
 			// Calculate texture position from yy.
-			texPos.y = yy * invHeight;
+			tex_pos.y = yy * inv_height;
 			
 			// Get color value for current position from allocation.
 			uchar4* colorPtr = (uchar4*)rsGetElementAt(allocation, xx, yy);
 			float3 color = rsUnpackColor8888(*colorPtr).rgb;
-
+			
+			// Adjust color brightness, contrast and saturation.
+			color = brightness(color, brightness_value);
+			color = contrast(color, contrast_value);
+			float average = dot(color, 1.0f) / 3.0f;
+			color += (average - color) * saturation_value;
+			
 			// Calculate darker rounded corners.
-			float len = distance(texPos, 0.5f) * sqrt2;
-			len = clamp((len - 1.0f + cornerRadius) * invCornerRadius, 0.0f, 1.0f);
+			float len = distance(tex_pos, 0.5f) * sqrt2;
+			len = (len - 1.0f + corner_radius_value) * inv_corner_radius;
+			len = clamp(len, 0.0f, 1.0f);
 			len = len * len * (3.0f - 2.0f * len);
 			color *= mix(0.5f, 1.0f, 1.0f - len);
 			

@@ -92,9 +92,8 @@ public class InstaCamRS {
 		mFilterDefault.invoke_setBrightness(data.mBrightness);
 		mFilterDefault.invoke_setContrast(data.mContrast);
 		mFilterDefault.invoke_setSaturation(data.mSaturation);
-		mFilterDefault.forEach_root(allocation);
-		// Apply darkened corners.
-		mFilterDefault.invoke_corners(allocation, data.mCornerRadius);
+		mFilterDefault.invoke_setCornerRadius(data.mCornerRadius);
+		mFilterDefault.invoke_apply(allocation);
 
 		// Copy allocation values back to Bitmap.
 		allocation.copyTo(bitmap);
