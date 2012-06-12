@@ -17,23 +17,11 @@
 #pragma version(1)
 #pragma rs java_package_name(fi.harism.instacam)
 
-#include "utils.rsh"
-
-static float3 COLOR1 = { 1.0f, 0.891f, 0.733f };
-
 void root(uchar4* v_color) {
 	float3 color = rsUnpackColor8888(*v_color).rgb;
 	
-	color.r = color.r * 0.843 + 0.157;
-	color.b = color.b * 0.882 + 0.118;
-	
-	float3 hsl = rgbToHsl(color);
-	hsl.y = hsl.y * 0.55f;
-	color = hslToRgb(hsl);
+	color = round(color * 5.0f) * 0.2f;
 
-	color = saturation(color, 0.65f);
-	color *= COLOR1;
-	
 	// Finally store color value back to allocation.
 	color = clamp(color, 0.0f, 1.0f);
 	*v_color = rsPackColorTo8888(color);

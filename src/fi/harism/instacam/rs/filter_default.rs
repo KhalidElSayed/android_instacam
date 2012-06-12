@@ -22,8 +22,16 @@
 static float brightness_value;
 static float contrast_value;
 static float saturation_value;
-static float corner_radius_value;
-	
+
+static float corner_radius;
+static float inv_corner_radius;
+
+static float inv_width;
+static float inv_height;
+
+static float2 tex_pos;
+static float sqrt2 = 1.41421356f;
+
 void setBrightness(float value) {
 	brightness_value = value;
 }
@@ -33,65 +41,38 @@ void setContrast(float value) {
 }
 
 void setSaturation(float value) {
-	if (value > 0.0f) {
-		saturation_value = 1.0f - (1.0f / (1.0f - value));
-	} else {
-		saturation_value = -value;
-	}
+	saturation_value = value;
 }
 
 void setCornerRadius(float value) {
-	corner_radius_value = value;
+	corner_radius = value;
+	inv_corner_radius = 1.0f / value;
 }
 
-void apply(rs_allocation allocation) {
+void setSize(float width, float height) {
+	inv_width = 1.0f / width;
+	inv_height = 1.0f / height;
+}
 
-	// Get image dimensions from allocation.
-	uint32_t width = rsAllocationGetDimX(allocation);
-	uint32_t height = rsAllocationGetDimY(allocation);
+void root(uchar4* v_color, uint32_t x, uint32_t y) {
+	tex_pos.x = x * inv_width;
+	tex_pos.y = y * inv_height;
 	
-	// Calculate some inverse values for making
-	// it possible to use multiplication instead.
-	float inv_width = 1.0f / width;
-	float inv_height = 1.0f / height;
-	float inv_corner_radius = 1.0f / corner_radius_value;
-	float sqrt2 = sqrt(2.0f);
+	float3 color = rsUnpackColor8888(*v_color).rgb;
 	
-	// Texture position within [0.0f, 1.0f] range.
-	float2 tex_pos;
+	// Adjust color brightness, contrast and saturation.
+	color = brightness(color, brightness_value);
+	color = contrast(color, contrast_value);
+	color = saturation(color, saturation_value);
 	
-	// Outer loop horizontally.
-	for (uint32_t xx = 0; xx < width; ++xx) {
-		
-		// Calculate texture position from xx.
-		tex_pos.x = xx * inv_width;
+	// Calculate darker rounded corners.
+	float len = distance(tex_pos, 0.5f) * sqrt2;
+	len = (len - 1.0f + corner_radius) * inv_corner_radius;
+	len = clamp(len, 0.0f, 1.0f);
+	len = len * len * (3.0f - 2.0f * len);
+	color *= mix(0.5f, 1.0f, 1.0f - len);
 	
-		// Inner loop vertically.
-		for (uint32_t yy = 0; yy < height; ++yy) {
-			
-			// Calculate texture position from yy.
-			tex_pos.y = yy * inv_height;
-			
-			// Get color value for current position from allocation.
-			uchar4* colorPtr = (uchar4*)rsGetElementAt(allocation, xx, yy);
-			float3 color = rsUnpackColor8888(*colorPtr).rgb;
-			
-			// Adjust color brightness, contrast and saturation.
-			color = brightness(color, brightness_value);
-			color = contrast(color, contrast_value);
-			float average = dot(color, 1.0f) / 3.0f;
-			color += (average - color) * saturation_value;
-			
-			// Calculate darker rounded corners.
-			float len = distance(tex_pos, 0.5f) * sqrt2;
-			len = (len - 1.0f + corner_radius_value) * inv_corner_radius;
-			len = clamp(len, 0.0f, 1.0f);
-			len = len * len * (3.0f - 2.0f * len);
-			color *= mix(0.5f, 1.0f, 1.0f - len);
-			
-			// Finally store color value back to allocation.
-			color = clamp(color, 0.0f, 1.0f);
-			*colorPtr = rsPackColorTo8888(color);			
-		}
-	}
+	// Finally store color value back to allocation.
+	color = clamp(color, 0.0f, 1.0f);
+	*v_color = rsPackColorTo8888(color);
 }

@@ -29,8 +29,10 @@ public class InstaCamRS {
 	// Filter scripts.
 	private ScriptC_filter_ansel mFilterAnsel;
 	private ScriptC_filter_blackandwhite mFilterBlackAndWhite;
+	private ScriptC_filter_cartoon mFilterCartoon;
 	private ScriptC_filter_default mFilterDefault;
 	private ScriptC_filter_georgia mFilterGeorgia;
+	private ScriptC_filter_polaroid mFilterPolaroid;
 	private ScriptC_filter_retro mFilterRetro;
 	private ScriptC_filter_sahara mFilterSahara;
 	private ScriptC_filter_sepia mFilterSepia;
@@ -46,8 +48,12 @@ public class InstaCamRS {
 				R.raw.filter_ansel);
 		mFilterBlackAndWhite = new ScriptC_filter_blackandwhite(mRS,
 				context.getResources(), R.raw.filter_blackandwhite);
+		mFilterCartoon = new ScriptC_filter_cartoon(mRS,
+				context.getResources(), R.raw.filter_cartoon);
 		mFilterGeorgia = new ScriptC_filter_georgia(mRS,
 				context.getResources(), R.raw.filter_georgia);
+		mFilterPolaroid = new ScriptC_filter_polaroid(mRS,
+				context.getResources(), R.raw.filter_polaroid);
 		mFilterRetro = new ScriptC_filter_retro(mRS, context.getResources(),
 				R.raw.filter_retro);
 		mFilterSahara = new ScriptC_filter_sahara(mRS, context.getResources(),
@@ -86,6 +92,12 @@ public class InstaCamRS {
 		case 6:
 			mFilterSahara.forEach_root(allocation);
 			break;
+		case 7:
+			mFilterPolaroid.forEach_root(allocation);
+			break;
+		case 8:
+			mFilterCartoon.forEach_root(allocation);
+			break;
 		}
 
 		// Apply brightness, contrast and saturation.
@@ -93,7 +105,8 @@ public class InstaCamRS {
 		mFilterDefault.invoke_setContrast(data.mContrast);
 		mFilterDefault.invoke_setSaturation(data.mSaturation);
 		mFilterDefault.invoke_setCornerRadius(data.mCornerRadius);
-		mFilterDefault.invoke_apply(allocation);
+		mFilterDefault.invoke_setSize(bitmap.getWidth(), bitmap.getHeight());
+		mFilterDefault.forEach_root(allocation);
 
 		// Copy allocation values back to Bitmap.
 		allocation.copyTo(bitmap);

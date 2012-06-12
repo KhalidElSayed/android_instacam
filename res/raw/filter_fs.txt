@@ -113,16 +113,20 @@ vec3 hslToRgb(vec3 hsl) {
 	return rgb;
 }
 
-vec3 saturateMatrix(vec3 color, float saturate) {
-	vec3 r = vec3(0.3086);
-	r.r += saturate;
-	vec3 g = vec3(0.6094);
-	g.g += saturate;
-	vec3 b = vec3(0.0820);
-	b.b += saturate;
+vec3 saturation(vec3 color, float sat) {
+	const float lumaR = 0.212671;
+	const float lumaG = 0.715160;
+	const float lumaB = 0.072169;
 	
-	mat3 m = mat3(r, g, b);
-	return m * color;
+	float v = sat + 1.0;
+	float i = 1.0 - v;
+	float r = i * lumaR;
+	float g = i * lumaG;
+	float b = i * lumaB;
+	
+	mat3 mat = mat3(r + v, r, r, g, g + v, g, b, b, b + v);
+	
+	return mat * color;
 }
 
 void main() {
@@ -181,19 +185,26 @@ void main() {
 		hsl.y = hsl.y * 0.55;
 		color = hslToRgb(hsl);
 		
-		color = saturateMatrix(color, 0.65);
+		color = saturation(color, 0.65);
 		color *= vec3(1.0, 0.891, 0.733);
+	}
+	// Polaroid filter.
+	if (uFilter == 7) {
+		const mat4 mat = mat4(1.438, -0.062, -0.062, 0.0,
+		                      -0.122, 1.378, -0.122, 0.0,
+		                      -0.016, -0.016, 1.483, 0.0,
+		                      -0.03, 0.05, -0.02, 0.0);
+		color = (mat * vec4(color, 1.0)).rgb;
+	}
+	// Cartoon filter.
+	if (uFilter == 8) {
+		color = floor(color * 5.0 + 0.5) * 0.2;
 	}
 	
 	// Calculate brightness, contrast and saturation.
 	color = brightness(color, uBrightness);
 	color = contrast(color, uContrast);
-	float average = dot(color, vec3(1.0)) / 3.0;
-	if (uSaturation > 0.0) {
-		color += (average - color) * (1.0 - 1.0 / (1.0 - uSaturation));
-	} else {
-		color += (average - color) * (-uSaturation);
-	}
+	color = saturation(color, uSaturation);
 	
 	// Calculate darkened corners.
 	const float sqrt2 = 1.414213562373;

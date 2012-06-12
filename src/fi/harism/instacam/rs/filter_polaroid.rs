@@ -17,23 +17,18 @@
 #pragma version(1)
 #pragma rs java_package_name(fi.harism.instacam)
 
-#include "utils.rsh"
+#include <rs_matrix.rsh>
 
-static float3 COLOR1 = { 1.0f, 0.891f, 0.733f };
+static rs_matrix4x4 mat = { 1.438, -0.062, -0.062, 0.0,
+		                    -0.122, 1.378, -0.122, 0.0,
+		                    -0.016, -0.016, 1.483, 0.0,
+		                    -0.03, 0.05, -0.02, 0.0 };
 
 void root(uchar4* v_color) {
 	float3 color = rsUnpackColor8888(*v_color).rgb;
 	
-	color.r = color.r * 0.843 + 0.157;
-	color.b = color.b * 0.882 + 0.118;
-	
-	float3 hsl = rgbToHsl(color);
-	hsl.y = hsl.y * 0.55f;
-	color = hslToRgb(hsl);
+	rsMatrixMultiply(&mat, color);
 
-	color = saturation(color, 0.65f);
-	color *= COLOR1;
-	
 	// Finally store color value back to allocation.
 	color = clamp(color, 0.0f, 1.0f);
 	*v_color = rsPackColorTo8888(color);

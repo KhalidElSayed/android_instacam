@@ -14,6 +14,8 @@
    limitations under the License.
  */
 
+#include <rs_matrix.rsh>
+
 static float3 brightness(float3 color, float brightness) {
 	float scaled = brightness / 2.0;
 	if (scaled < 0.0) {
@@ -24,8 +26,8 @@ static float3 brightness(float3 color, float brightness) {
 }
 
 static float3 contrast(float3 color, float contrast) {
-	const float PI = 3.14159265;
-	return min(1.0f, ((color - 0.5f) * (tan((contrast + 1.0f) * PI / 4.0f) ) + 0.5f));
+	const float PI_PER_4 = M_PI / 4.0f;
+	return min(1.0f, ((color - 0.5f) * (tan((contrast + 1.0f) * PI_PER_4) ) + 0.5f));
 }
 
 static float3 overlay(float3 overlayComponent, float3 underlayComponent, float alpha) {
@@ -48,7 +50,7 @@ static float hueToRGB(float f1, float f2, float hue)
 	float res;
 	if ((6.0 * hue) < 1.0) res = f1 + (f2 - f1) * 6.0 * hue;
 	else if ((2.0 * hue) < 1.0) res = f2;
-	else if ((3.0 * hue) < 2.0) res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;
+	else if ((3.0 * hue) < 2.0) res = f1 + (f2 - f1) * (0.666667 - hue) * 6.0;
 	else res = f1;
 	return res;
 }
@@ -60,7 +62,7 @@ static float3 rgbToHsl(float3 color) {
 	float fmax = max(max(color.r, color.g), color.b);
 	float delta = fmax - fmin;
 
-	hsl.z = (fmax + fmin) / 2.0;
+	hsl.z = (fmax + fmin) * 0.5;
 
 	if (delta == 0.0) {
 		hsl.x = 0.0;	// Hue
@@ -69,13 +71,13 @@ static float3 rgbToHsl(float3 color) {
 		if (hsl.z < 0.5) hsl.y = delta / (fmax + fmin);
 		else hsl.y = delta / (2.0 - fmax - fmin); // Saturation
 		
-		float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;
-		float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;
-		float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;
+		float deltaR = (((fmax - color.r) * 0.166667) + (delta * 0.5)) / delta;
+		float deltaG = (((fmax - color.g) * 0.166667) + (delta * 0.5)) / delta;
+		float deltaB = (((fmax - color.b) * 0.166667) + (delta * 0.5)) / delta;
 
 		if (color.r == fmax) hsl.x = deltaB - deltaG;
-		else if (color.g == fmax) hsl.x = (1.0 / 3.0) + deltaR - deltaB;
-		else if (color.b == fmax) hsl.x = (2.0 / 3.0) + deltaG - deltaR;
+		else if (color.g == fmax) hsl.x = 0.333332 + deltaR - deltaB;
+		else if (color.b == fmax) hsl.x = 0.666667 + deltaG - deltaR;
 
 		if (hsl.x < 0.0) hsl.x += 1.0;
 		else if (hsl.x > 1.0) hsl.x -= 1.0;
@@ -94,20 +96,25 @@ static float3 hslToRgb(float3 hsl) {
 		
 		float f1 = 2.0 * hsl.z - f2;
 		
-		rgb.r = hueToRGB(f1, f2, hsl.x + (1.0/3.0));
+		rgb.r = hueToRGB(f1, f2, hsl.x + 0.333332);
 		rgb.g = hueToRGB(f1, f2, hsl.x);
-		rgb.b = hueToRGB(f1, f2, hsl.x - (1.0/3.0));
+		rgb.b = hueToRGB(f1, f2, hsl.x - 0.333332);
 	}
 	return rgb;
 }
 
-static float3 saturate(float3 color, float sat) {
-	float3 r = 0.3086;
-	r.r += sat;
-	float3 g = 0.6094;
-	g.g += sat;
-	float3 b = 0.0820;
-	b.b += sat;
+static float3 saturation(float3 color, float sat) {
+	const float lumaR = 0.212671;
+	const float lumaG = 0.715160;
+	const float lumaB = 0.072169;
 	
-	return r * color + g * color + b * color;
+	float v = sat + 1.0;
+	float i = 1.0 - v;
+	float r = i * lumaR;
+	float g = i * lumaG;
+	float b = i * lumaB;
+	
+	rs_matrix3x3 mat = { r + v, r, r, g, g + v, g, b, b, b + v };
+	
+	return rsMatrixMultiply(&mat, color);
 }
