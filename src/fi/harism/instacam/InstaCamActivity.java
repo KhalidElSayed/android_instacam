@@ -113,7 +113,8 @@ public class InstaCamActivity extends Activity {
 		Spinner localSpinner = (Spinner) findViewById(R.id.spinner_filter);
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
 				this, R.array.filters, R.layout.spinner_text);
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		// adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		adapter.setDropDownViewResource(R.layout.spinner_dropdown);
 		localSpinner.setAdapter(adapter);
 
 		// Find renderer view and instantiate it.
