@@ -27,9 +27,9 @@ void root(uchar4* v_color) {
 	color.r = color.r * 0.843 + 0.157;
 	color.b = color.b * 0.882 + 0.118;
 	
-	float3 hsl = rgbToHsl(color);
-	hsl.y = hsl.y * 0.55f;
-	color = hslToRgb(hsl);
+	float3 hsv = rgbToHsv(color);
+	hsv.y = hsv.y * 0.55f;
+	color = hsvToRgb(hsv);
 
 	color = saturation(color, 0.65f);
 	color *= COLOR1;

@@ -43,64 +43,87 @@ static float3 screenPixelComponent(float3 maskPixelComponent, float alpha, float
 	return 1.0f - (1.0f - (maskPixelComponent * alpha)) * (1.0f - imagePixelComponent);
 }
 
-static float hueToRGB(float f1, float f2, float hue)
-{
-	if (hue < 0.0) hue += 1.0;
-	else if (hue > 1.0)	hue -= 1.0;
-	float res;
-	if ((6.0 * hue) < 1.0) res = f1 + (f2 - f1) * 6.0 * hue;
-	else if ((2.0 * hue) < 1.0) res = f2;
-	else if ((3.0 * hue) < 2.0) res = f1 + (f2 - f1) * (0.666667 - hue) * 6.0;
-	else res = f1;
-	return res;
-}
-
-static float3 rgbToHsl(float3 color) {
-	float3 hsl;
+static float3 rgbToHsv(float3 color) {
+	float3 hsv;
 	
-	float fmin = min(min(color.r, color.g), color.b);
-	float fmax = max(max(color.r, color.g), color.b);
-	float delta = fmax - fmin;
+	float mmin = min(color.r, min(color.g, color.b));
+	float mmax = max(color.r, max(color.g, color.b));
+	float delta = mmax - mmin;
+	
+	hsv.z = mmax;
+	hsv.y = delta / mmax;
 
-	hsl.z = (fmax + fmin) * 0.5;
-
-	if (delta == 0.0) {
-		hsl.x = 0.0;	// Hue
-		hsl.y = 0.0;	// Saturation
+	if (color.r == mmax) {
+		hsv.x = (color.g - color.b) / delta;
+	} else if (color.g == mmax) {
+		hsv.x = 2.0 + (color.b - color.r) / delta;
 	} else {
-		if (hsl.z < 0.5) hsl.y = delta / (fmax + fmin);
-		else hsl.y = delta / (2.0 - fmax - fmin); // Saturation
-		
-		float deltaR = (((fmax - color.r) * 0.166667) + (delta * 0.5)) / delta;
-		float deltaG = (((fmax - color.g) * 0.166667) + (delta * 0.5)) / delta;
-		float deltaB = (((fmax - color.b) * 0.166667) + (delta * 0.5)) / delta;
-
-		if (color.r == fmax) hsl.x = deltaB - deltaG;
-		else if (color.g == fmax) hsl.x = 0.333332 + deltaR - deltaB;
-		else if (color.b == fmax) hsl.x = 0.666667 + deltaG - deltaR;
-
-		if (hsl.x < 0.0) hsl.x += 1.0;
-		else if (hsl.x > 1.0) hsl.x -= 1.0;
+		hsv.x = 4.0 + (color.r - color.g) / delta;
 	}
-	return hsl;
+	
+	hsv.x *= 0.166667;
+	if (hsv.x < 0.0) {
+		hsv.x += 1.0;
+	}
+	
+	return hsv;
 }
 
-static float3 hslToRgb(float3 hsl) {
-	float3 rgb;
-	if (hsl.y == 0.0) rgb.rgb = hsl.z;
-	else {
-		float f2;
+static float3 hsvToRgb(float3 hsv) {
+	if (hsv.y == 0.0) {
+		return hsv.z;
+	} else {
+		float i;
+		float aa, bb, cc, f;
+
+		float h = hsv.x;
+		float s = hsv.y;
+		float b = hsv.z;
+
+		if (h == 1.0) {
+			h = 0.0;
+		}
+
+		h *= 6.0;
+		i = floor(h);
+		f = h - i;
+		aa = b * (1.0 - s);
+		bb = b * (1.0 - (s * f));
+		cc = b * (1.0 - (s * (1.0 - f)));
 		
-		if (hsl.z < 0.5) f2 = hsl.z * (1.0 + hsl.y);
-		else f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);
-		
-		float f1 = 2.0 * hsl.z - f2;
-		
-		rgb.r = hueToRGB(f1, f2, hsl.x + 0.333332);
-		rgb.g = hueToRGB(f1, f2, hsl.x);
-		rgb.b = hueToRGB(f1, f2, hsl.x - 0.333332);
+		float3 rgb;
+		if (i == 0) {
+			rgb.r = b;
+			rgb.g = cc;
+			rgb.b = aa;
+		}
+		if (i == 1) {
+			rgb.r = bb;
+			rgb.g = b;
+			rgb.b = aa;
+		}
+		if (i == 2) {
+			rgb.r = aa;
+			rgb.g = b;
+			rgb.b = cc;
+		}
+		if (i == 3) {
+			rgb.r = aa;
+			rgb.g = bb;
+			rgb.b = b;
+		}
+		if (i == 4) {
+			rgb.r = cc;
+			rgb.g = aa;
+			rgb.b = b;
+		}
+		if (i == 5) {
+			rgb.r = b;
+			rgb.g = aa;
+			rgb.b = bb;
+		}
+		return rgb;
 	}
-	return rgb;
 }
 
 static float3 saturation(float3 color, float sat) {
